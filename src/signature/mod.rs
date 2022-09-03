@@ -7,5 +7,6 @@ pub trait Signature {
 }
 
 pub trait SignatureScheme<S: Signature> {
+    fn new(seed: [u8; 32]) -> Self;
     fn sign(&self, message: &[u8; 32]) -> S;
 }

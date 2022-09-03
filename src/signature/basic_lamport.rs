@@ -34,8 +34,8 @@ pub struct BasicLamportSignatureScheme {
     pk: [[[u8; 32]; 2]; 256]
 }
 
-impl BasicLamportSignatureScheme {
-    pub fn new(seed: [u8; 32]) -> Self {
+impl SignatureScheme<BasicLamportSignature> for BasicLamportSignatureScheme {
+     fn new(seed: [u8; 32]) -> Self {
         let mut rng = ChaCha20Rng::from_seed(seed);
         let mut sk: [[[u8; 32]; 2]; 256] = [[[0; 32]; 2]; 256];
 
@@ -55,10 +55,7 @@ impl BasicLamportSignatureScheme {
         }
         BasicLamportSignatureScheme { sk, pk }
     }
-}
-
-impl SignatureScheme<BasicLamportSignature> for BasicLamportSignatureScheme {
-    fn sign(&self, message: &[u8; 32]) ->  BasicLamportSignature{
+    fn sign(&self, message: &[u8; 32]) ->  BasicLamportSignature {
         let mut signature: [[u8; 32]; 256] = [[0; 32]; 256];
         for byte_index in 0..32 {
             let byte = message[byte_index];
