@@ -21,8 +21,8 @@ impl<Scheme, S> QIndexedSignatureScheme<Scheme, S>
         let mut rng = ChaCha20Rng::from_seed(seed);
         let mut seed_for_sub_scheme: [u8; 32] = [0; 32];
         let mut signature_schemes: Vec<Scheme> = Vec::new();
-        rng.fill_bytes(&mut seed_for_sub_scheme);
         for _ in 0..q {
+            rng.fill_bytes(&mut seed_for_sub_scheme);
             signature_schemes.push(Scheme::new(seed_for_sub_scheme));
         }
         Self {available_q: vec![true; q], signature_schemes , signature_type: PhantomData}
