@@ -5,10 +5,9 @@ use rand_chacha::ChaCha20Rng;
 use crate::digest_to_bytes::digest_to_bytes;
 use crate::signature::{Signature, SignatureScheme};
 
-
-pub struct BasicLamportSignature{
+pub struct BasicLamportSignature {
     pk: [[[u8; 32]; 2]; 256],
-    signature: [[u8; 32]; 256]
+    signature: [[u8; 32]; 256],
 }
 
 impl Signature for BasicLamportSignature {
@@ -31,11 +30,11 @@ pub struct BasicLamportSignatureScheme {
     // 2v
     // x : 256 bit
     sk: [[[u8; 32]; 2]; 256],
-    pk: [[[u8; 32]; 2]; 256]
+    pk: [[[u8; 32]; 2]; 256],
 }
 
 impl SignatureScheme<BasicLamportSignature> for BasicLamportSignatureScheme {
-     fn new(seed: [u8; 32]) -> Self {
+    fn new(seed: [u8; 32]) -> Self {
         let mut rng = ChaCha20Rng::from_seed(seed);
         let mut sk: [[[u8; 32]; 2]; 256] = [[[0; 32]; 2]; 256];
 
@@ -55,7 +54,7 @@ impl SignatureScheme<BasicLamportSignature> for BasicLamportSignatureScheme {
         }
         BasicLamportSignatureScheme { sk, pk }
     }
-    fn sign(&self, message: &[u8; 32]) ->  BasicLamportSignature {
+    fn sign(&self, message: &[u8; 32]) -> BasicLamportSignature {
         let mut signature: [[u8; 32]; 256] = [[0; 32]; 256];
         for byte_index in 0..32 {
             let byte = message[byte_index];
@@ -68,6 +67,9 @@ impl SignatureScheme<BasicLamportSignature> for BasicLamportSignatureScheme {
                 }
             }
         }
-        BasicLamportSignature{pk: self.pk, signature}
+        BasicLamportSignature {
+            pk: self.pk,
+            signature,
+        }
     }
 }

@@ -1,11 +1,10 @@
-use orion::hash::{digest, Digest};
 use crate::digest_to_bytes::digest_to_bytes;
+use orion::hash::{digest, Digest};
 
 pub enum MerkleTree {
     Leaf([u8; 32]),
     InternalNode(Box<MerkleTree>, Box<MerkleTree>),
 }
-
 
 impl MerkleTree {
     pub fn new(elements: &[[u8; 32]]) -> MerkleTree {

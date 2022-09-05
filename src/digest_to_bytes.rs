@@ -1,5 +1,4 @@
-use orion::hash::{Digest};
-
+use orion::hash::Digest;
 
 pub fn digest_to_bytes(digest: Digest) -> [u8; 32] {
     assert_eq!(digest.len(), 32);
