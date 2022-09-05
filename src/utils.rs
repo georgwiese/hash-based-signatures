@@ -9,3 +9,11 @@ pub fn digest_to_bytes(digest: Digest) -> [u8; 32] {
     }
     res
 }
+
+pub fn hash_to_string(hash: &[u8; 32]) -> String {
+    let mut result = format!("{:x?}", hash[0]);
+    for i in 1..32 {
+        result.push_str(&format!("{:x?}", hash[i]));
+    }
+    result
+}

@@ -1,6 +1,9 @@
-use crate::utils::digest_to_bytes;
+use crate::utils::{digest_to_bytes, hash_to_string};
 use orion::hash::digest;
+use std::fmt::{Debug, Formatter};
+use std::str::from_utf8;
 
+#[derive(Debug)]
 enum Direction {
     Left,
     Right,
@@ -13,7 +16,7 @@ pub struct MerkleProof<'a> {
 }
 
 enum Node<'a> {
-    Leaf(&'a [u8; 32]),
+    Leaf(&'a [u8]),
     InternalNode(Box<MerkleTree<'a>>, Box<MerkleTree<'a>>),
 }
 
@@ -38,7 +41,7 @@ pub fn internal_node_hash(left: &[u8; 32], right: &[u8; 32]) -> [u8; 32] {
 }
 
 impl<'a> MerkleTree<'a> {
-    pub fn new(elements: &'a [[u8; 32]]) -> MerkleTree {
+    pub fn new(elements: &'a [&'a [u8]]) -> MerkleTree {
         let depth = (elements.len() as f64).log2() as usize;
 
         if 1 << depth != elements.len() {
@@ -94,7 +97,7 @@ impl<'a> MerkleTree<'a> {
                     proof
                 } else {
                     // Element is in left child
-                    let mut proof = right_tree.get_proof(i - 1 << (self.depth - 1));
+                    let mut proof = right_tree.get_proof(i - (1 << (self.depth - 1)));
                     proof
                         .hash_chain
                         .push((Direction::Left, left_tree.root_hash));
@@ -104,6 +107,30 @@ impl<'a> MerkleTree<'a> {
                 proof
             }
         }
+    }
+
+    fn representation_string(&self, indent: usize) -> String {
+        let mut result = String::new();
+        let indent_str = "  ".repeat(indent).to_string();
+        result += &format!("{}{}\n", indent_str, hash_to_string(&self.root_hash));
+
+        match &self.root_node {
+            Node::Leaf(data) => {
+                result += &format!("{}  Data: {}\n", indent_str, from_utf8(*data).unwrap());
+            }
+            Node::InternalNode(left, right) => {
+                result += &left.representation_string(indent + 1);
+                result += &right.representation_string(indent + 1);
+            }
+        }
+
+        result
+    }
+}
+
+impl Debug for MerkleTree<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.representation_string(0))
     }
 }
 
@@ -118,5 +145,16 @@ impl<'a> MerkleProof<'a> {
         }
 
         expected_root_hash == self.root_hash
+    }
+}
+
+impl Debug for MerkleProof<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut representation = format!("Data: {}\nProof:\n", from_utf8(self.data).unwrap());
+        for (direction, hash) in &self.hash_chain {
+            representation += &format!("  ({:?}, {})\n", direction, hash_to_string(hash));
+        }
+        representation += &format!("Verifies: {}", self.verify());
+        write!(f, "{}", representation)
     }
 }
