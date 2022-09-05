@@ -1,4 +1,4 @@
-use orion::hash::{digest, Digest};
+use orion::hash::digest;
 use rand::prelude::*;
 use rand_chacha::ChaCha20Rng;
 

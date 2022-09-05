@@ -1,5 +1,5 @@
 use crate::digest_to_bytes::digest_to_bytes;
-use orion::hash::{digest, Digest};
+use orion::hash::digest;
 
 pub enum MerkleTree {
     Leaf([u8; 32]),
