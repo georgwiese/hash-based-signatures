@@ -7,9 +7,9 @@ fn main() {
     let element_strings: Vec<String> = (0..8).map(|x| format!("{}", x)).collect();
     let elements = element_strings
         .iter()
-        .map(|x| x.as_bytes())
-        .collect::<Vec<&[u8]>>();
-    let tree = MerkleTree::new(&elements);
+        .map(|x| Vec::from(x.as_bytes()))
+        .collect();
+    let tree = MerkleTree::new(elements);
     let root_hash = tree.get_root_hash();
 
     println!("Merkle Tree:\n{:?}", tree);
@@ -22,35 +22,43 @@ fn main() {
     let signature = basic_signature.sign(*root_hash);
     println!(
         "Verify signature of root {}",
-        BasicLamportSignatureScheme::verify(basic_signature.public_key(), *root_hash, signature)
+        BasicLamportSignatureScheme::verify(basic_signature.public_key(), *root_hash, &signature)
     );
     println!(
         "Verify signature of garbage {}",
         BasicLamportSignatureScheme::verify(
             basic_signature.public_key(),
             *root_hash,
-            [[0u8; 32]; 256]
+            &[[0u8; 32]; 256]
         )
     );
 
     // q-indexed with basic lamport
     let mut q_indexed_basic_lamport = QIndexedSignatureScheme::new(2, [0; 32]);
-    let signature = q_indexed_basic_lamport.sign((0, *root_hash));
+    let signature0 = q_indexed_basic_lamport.sign((0, *root_hash));
     println!(
         "Verify q-indexed basic lamport index 0 {}",
         QIndexedSignatureScheme::verify(
             q_indexed_basic_lamport.public_key(),
             (0, *root_hash),
-            signature
+            &signature0
         )
     );
-    let signature = q_indexed_basic_lamport.sign((1, *root_hash));
+    let signature2 = q_indexed_basic_lamport.sign((1, *root_hash));
     println!(
         "Verify q-indexed basic lamport index 1 {}",
         QIndexedSignatureScheme::verify(
             q_indexed_basic_lamport.public_key(),
             (1, *root_hash),
-            signature
+            &signature2
+        )
+    );
+    println!(
+        "Verify q-indexed basic lamport index 1 (wrong message) {}",
+        QIndexedSignatureScheme::verify(
+            q_indexed_basic_lamport.public_key(),
+            (0, *root_hash),
+            &signature2
         )
     );
 }

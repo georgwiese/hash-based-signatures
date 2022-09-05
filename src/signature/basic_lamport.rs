@@ -71,7 +71,7 @@ impl SignatureScheme<BasicLamportKey, HashType, BasicLamportSignature>
         signature
     }
 
-    fn verify(pk: BasicLamportKey, message: HashType, signature: BasicLamportSignature) -> bool {
+    fn verify(pk: BasicLamportKey, message: HashType, signature: &BasicLamportSignature) -> bool {
         let mut is_correct = true;
         for byte_index in 0..32 {
             let byte = message[byte_index];
