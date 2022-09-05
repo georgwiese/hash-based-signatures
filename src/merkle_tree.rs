@@ -1,4 +1,4 @@
-use crate::digest_to_bytes::digest_to_bytes;
+use crate::utils::digest_to_bytes;
 use orion::hash::digest;
 
 enum Direction {

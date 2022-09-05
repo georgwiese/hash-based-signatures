@@ -2,8 +2,8 @@ use orion::hash::digest;
 use rand::prelude::*;
 use rand_chacha::ChaCha20Rng;
 
-use crate::digest_to_bytes::digest_to_bytes;
 use crate::signature::{Signature, SignatureScheme};
+use crate::utils::digest_to_bytes;
 
 pub struct BasicLamportSignature {
     pk: [[[u8; 32]; 2]; 256],
