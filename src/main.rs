@@ -9,7 +9,7 @@ fn main() {
     let element = [0u8; 32];
     let elements = [element, element, element, element];
     let tree = MerkleTree::new(&elements);
-    let root_hash = tree.root();
+    let root_hash = tree.get_root_hash();
 
     for i in root_hash {
         println!("{}", i);
