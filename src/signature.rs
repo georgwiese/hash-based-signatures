@@ -1,11 +1,10 @@
 pub mod basic_lamport;
 pub mod q_indexed_signature;
 
-pub trait Signature {
-    fn verify(&self, message: &[u8; 32]) -> bool;
-}
+pub type HashType = [u8; 32];
 
-pub trait SignatureScheme<S: Signature> {
-    fn new(seed: [u8; 32]) -> Self;
-    fn sign(&self, message: &[u8; 32]) -> S;
+pub trait SignatureScheme<PK, M, SIG> {
+    fn public_key(&self) -> PK;
+    fn sign(&mut self, message: M) -> SIG;
+    fn verify(pk: PK, message: M, signature: SIG) -> bool;
 }
