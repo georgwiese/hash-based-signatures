@@ -159,3 +159,39 @@ impl Debug for MerkleProof {
         write!(f, "{}", representation)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::merkle_tree::{MerkleProof, MerkleTree};
+
+    fn merkle_tree() -> MerkleTree {
+        let elements = (0u8..128).map(|x| vec![x]).collect();
+        MerkleTree::new(elements)
+    }
+
+    #[test]
+    fn test_valid_proofs() {
+        let tree = merkle_tree();
+        let proof = tree.get_proof(42);
+
+        assert_eq!(proof.data, vec![42u8]);
+        assert_eq!(proof.root_hash, *tree.get_root_hash());
+        assert!(proof.verify(*tree.get_root_hash()));
+    }
+
+    #[test]
+    fn test_invalid_proofs() {
+        let tree = merkle_tree();
+        let proof1 = tree.get_proof(42);
+        let proof2 = tree.get_proof(123);
+
+        assert_eq!(proof1.root_hash, proof2.root_hash);
+
+        let invalid_proof = MerkleProof {
+            data: proof1.data,
+            hash_chain: proof2.hash_chain,
+            root_hash: proof2.root_hash,
+        };
+        assert!(!invalid_proof.verify(tree.root_hash));
+    }
+}
