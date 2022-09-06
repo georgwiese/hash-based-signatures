@@ -1,17 +1,12 @@
-use crate::utils::{digest_to_bytes, hash_to_string};
+use crate::utils::{digest_to_bytes, get_least_significant_bits, hash_to_string};
 use orion::hash::digest;
 use std::fmt::{Debug, Formatter};
 use std::str::from_utf8;
 
-#[derive(Debug)]
-enum Direction {
-    Left,
-    Right,
-}
-
 pub struct MerkleProof {
     pub data: Vec<u8>,
-    hash_chain: Vec<(Direction, [u8; 32])>,
+    index: usize,
+    hash_chain: Vec<[u8; 32]>,
     root_hash: [u8; 32],
 }
 
@@ -85,6 +80,7 @@ impl MerkleTree {
         match &self.root_node {
             Node::Leaf(element) => MerkleProof {
                 data: element.clone(),
+                index: i,
                 hash_chain: vec![],
                 root_hash: self.root_hash,
             },
@@ -92,19 +88,16 @@ impl MerkleTree {
                 let mut proof = if i < 1 << (self.depth - 1) {
                     // Element is in left child
                     let mut proof = left_tree.get_proof(i);
-                    proof
-                        .hash_chain
-                        .push((Direction::Right, right_tree.root_hash));
+                    proof.hash_chain.push(right_tree.root_hash);
                     proof
                 } else {
                     // Element is in left child
                     let mut proof = right_tree.get_proof(i - (1 << (self.depth - 1)));
-                    proof
-                        .hash_chain
-                        .push((Direction::Left, left_tree.root_hash));
+                    proof.hash_chain.push(left_tree.root_hash);
                     proof
                 };
                 proof.root_hash = self.root_hash;
+                proof.index = i;
                 proof
             }
         }
@@ -137,11 +130,12 @@ impl Debug for MerkleTree {
 
 impl<'a> MerkleProof {
     pub fn verify(&self, root_hash: [u8; 32]) -> bool {
+        let index_bits = get_least_significant_bits(self.index, self.hash_chain.len());
         let mut expected_root_hash = leaf_hash(&self.data);
-        for (direction, hash) in &self.hash_chain {
-            expected_root_hash = match direction {
-                Direction::Left => internal_node_hash(hash, &expected_root_hash),
-                Direction::Right => internal_node_hash(&expected_root_hash, hash),
+        for (hash, index_bit) in self.hash_chain.iter().zip(index_bits) {
+            expected_root_hash = match index_bit {
+                false => internal_node_hash(&expected_root_hash, hash),
+                true => internal_node_hash(hash, &expected_root_hash),
             }
         }
 
@@ -151,9 +145,13 @@ impl<'a> MerkleProof {
 
 impl Debug for MerkleProof {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let mut representation = format!("Data: {}\nProof:\n", from_utf8(&self.data).unwrap());
-        for (direction, hash) in &self.hash_chain {
-            representation += &format!("  ({:?}, {})\n", direction, hash_to_string(hash));
+        let mut representation = format!(
+            "Data: {}\nIndex: {}\nProof:\n",
+            from_utf8(&self.data).unwrap(),
+            self.index
+        );
+        for hash in self.hash_chain.iter() {
+            representation += &format!("  {}\n", hash_to_string(hash));
         }
         representation += &format!("Verifies: {}", self.verify(self.root_hash));
         write!(f, "{}", representation)
@@ -187,11 +185,28 @@ mod tests {
 
         assert_eq!(proof1.root_hash, proof2.root_hash);
 
-        let invalid_proof = MerkleProof {
-            data: proof1.data,
-            hash_chain: proof2.hash_chain,
-            root_hash: proof2.root_hash,
+        let invalid_proof_wrong_index = MerkleProof {
+            data: proof1.data.clone(),
+            root_hash: proof1.root_hash,
+            hash_chain: proof1.hash_chain.clone(),
+            index: proof2.index,
         };
-        assert!(!invalid_proof.verify(tree.root_hash));
+        assert!(!invalid_proof_wrong_index.verify(tree.root_hash));
+
+        let invalid_proof_wrong_hash_chain = MerkleProof {
+            data: proof1.data.clone(),
+            root_hash: proof1.root_hash,
+            hash_chain: proof2.hash_chain.clone(),
+            index: proof1.index,
+        };
+        assert!(!invalid_proof_wrong_hash_chain.verify(tree.root_hash));
+
+        let invalid_proof_wrong_index_wrong_hash_chain = MerkleProof {
+            data: proof1.data.clone(),
+            root_hash: proof1.root_hash,
+            hash_chain: proof2.hash_chain.clone(),
+            index: proof2.index,
+        };
+        assert!(!invalid_proof_wrong_index_wrong_hash_chain.verify(tree.root_hash));
     }
 }
