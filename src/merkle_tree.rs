@@ -3,10 +3,21 @@ use orion::hash::digest;
 use std::fmt::{Debug, Formatter};
 use std::str::from_utf8;
 
-pub struct MerkleProof {
-    pub data: Vec<u8>,
-    index: usize,
-    hash_chain: Vec<[u8; 32]>,
+/// A Merkle tree.
+///
+/// # Examples
+/// ```
+/// use hash_based_signatures::merkle_tree::MerkleTree;
+///
+/// let elements = (0u8..128).map(|x| vec![x]).collect();
+/// let tree = MerkleTree::new(elements);
+/// let proof = tree.get_proof(17);
+/// assert!(proof.verify(*tree.get_root_hash()));
+/// ```
+pub struct MerkleTree {
+    root_hash: [u8; 32],
+    root_node: Node,
+    depth: usize,
 }
 
 enum Node {
@@ -14,10 +25,11 @@ enum Node {
     InternalNode(Box<MerkleTree>, Box<MerkleTree>),
 }
 
-pub struct MerkleTree {
-    root_hash: [u8; 32],
-    root_node: Node,
-    depth: usize,
+/// A proof that a given datum is at a given index.
+pub struct MerkleProof {
+    pub data: Vec<u8>,
+    pub index: usize,
+    pub hash_chain: Vec<[u8; 32]>,
 }
 
 pub fn leaf_hash(data: &[u8]) -> [u8; 32] {
@@ -35,6 +47,15 @@ pub fn internal_node_hash(left: &[u8; 32], right: &[u8; 32]) -> [u8; 32] {
 }
 
 impl MerkleTree {
+    /// Construct a new Merkle tree from a list of `elements`.
+    ///
+    /// A single element is of type `Vec<u8>`, so any complex data structure has
+    /// to be serialized to a variable-length byte array.
+    /// The tree owns the values.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the number of elements is not a power of two.
     pub fn new(elements: Vec<Vec<u8>>) -> MerkleTree {
         let depth = (elements.len() as f64).log2() as usize;
 
@@ -69,10 +90,12 @@ impl MerkleTree {
         }
     }
 
+    /// Get the root hash of the tree.
     pub fn get_root_hash(&self) -> &[u8; 32] {
         &self.root_hash
     }
 
+    /// Get a Merkle proof for a given index `i`.
     pub fn get_proof(&self, i: usize) -> MerkleProof {
         assert!(i < 1 << self.depth);
 
@@ -126,6 +149,7 @@ impl Debug for MerkleTree {
 }
 
 impl<'a> MerkleProof {
+    /// Verifies that the given root hash can be reconstructed from the Merkle proof.
     pub fn verify(&self, root_hash: [u8; 32]) -> bool {
         let index_bits = get_least_significant_bits(self.index, self.hash_chain.len());
         let mut expected_root_hash = leaf_hash(&self.data);
