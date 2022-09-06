@@ -132,7 +132,7 @@ impl<'a> MerkleProof {
     pub fn verify(&self, root_hash: [u8; 32]) -> bool {
         let index_bits = get_least_significant_bits(self.index, self.hash_chain.len());
         let mut expected_root_hash = leaf_hash(&self.data);
-        for (hash, index_bit) in self.hash_chain.iter().zip(index_bits) {
+        for (hash, index_bit) in self.hash_chain.iter().zip(index_bits.iter().rev()) {
             expected_root_hash = match index_bit {
                 false => internal_node_hash(&expected_root_hash, hash),
                 true => internal_node_hash(hash, &expected_root_hash),
@@ -170,9 +170,9 @@ mod tests {
     #[test]
     fn test_valid_proofs() {
         let tree = merkle_tree();
-        let proof = tree.get_proof(42);
+        let proof = tree.get_proof(43);
 
-        assert_eq!(proof.data, vec![42u8]);
+        assert_eq!(proof.data, vec![43u8]);
         assert_eq!(proof.root_hash, *tree.get_root_hash());
         assert!(proof.verify(*tree.get_root_hash()));
     }
@@ -180,7 +180,7 @@ mod tests {
     #[test]
     fn test_invalid_proofs() {
         let tree = merkle_tree();
-        let proof1 = tree.get_proof(42);
+        let proof1 = tree.get_proof(43);
         let proof2 = tree.get_proof(123);
 
         assert_eq!(proof1.root_hash, proof2.root_hash);
