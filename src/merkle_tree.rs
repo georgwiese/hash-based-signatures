@@ -7,7 +7,6 @@ pub struct MerkleProof {
     pub data: Vec<u8>,
     index: usize,
     hash_chain: Vec<[u8; 32]>,
-    root_hash: [u8; 32],
 }
 
 enum Node {
@@ -82,7 +81,6 @@ impl MerkleTree {
                 data: element.clone(),
                 index: i,
                 hash_chain: vec![],
-                root_hash: self.root_hash,
             },
             Node::InternalNode(left_tree, right_tree) => {
                 let mut proof = if i < 1 << (self.depth - 1) {
@@ -96,7 +94,6 @@ impl MerkleTree {
                     proof.hash_chain.push(left_tree.root_hash);
                     proof
                 };
-                proof.root_hash = self.root_hash;
                 proof.index = i;
                 proof
             }
@@ -153,7 +150,6 @@ impl Debug for MerkleProof {
         for hash in self.hash_chain.iter() {
             representation += &format!("  {}\n", hash_to_string(hash));
         }
-        representation += &format!("Verifies: {}", self.verify(self.root_hash));
         write!(f, "{}", representation)
     }
 }
@@ -173,7 +169,6 @@ mod tests {
         let proof = tree.get_proof(43);
 
         assert_eq!(proof.data, vec![43u8]);
-        assert_eq!(proof.root_hash, *tree.get_root_hash());
         assert!(proof.verify(*tree.get_root_hash()));
     }
 
@@ -183,11 +178,8 @@ mod tests {
         let proof1 = tree.get_proof(43);
         let proof2 = tree.get_proof(123);
 
-        assert_eq!(proof1.root_hash, proof2.root_hash);
-
         let invalid_proof_wrong_index = MerkleProof {
             data: proof1.data.clone(),
-            root_hash: proof1.root_hash,
             hash_chain: proof1.hash_chain.clone(),
             index: proof2.index,
         };
@@ -195,7 +187,6 @@ mod tests {
 
         let invalid_proof_wrong_hash_chain = MerkleProof {
             data: proof1.data.clone(),
-            root_hash: proof1.root_hash,
             hash_chain: proof2.hash_chain.clone(),
             index: proof1.index,
         };
@@ -203,7 +194,6 @@ mod tests {
 
         let invalid_proof_wrong_index_wrong_hash_chain = MerkleProof {
             data: proof1.data.clone(),
-            root_hash: proof1.root_hash,
             hash_chain: proof2.hash_chain.clone(),
             index: proof2.index,
         };
