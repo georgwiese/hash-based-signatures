@@ -28,7 +28,7 @@ pub fn get_least_significant_bits(index: usize, bits: usize) -> Vec<bool> {
     result
 }
 
-#[cfg(tests)]
+#[cfg(test)]
 mod tests {
     use crate::utils::get_least_significant_bits;
 
