@@ -21,7 +21,9 @@ This is the current list of finished & planned steps:
 - One-time signatures:
   - [x] Implement basic Lamport signature scheme
   - [ ] Implement Winternitz one-time signatures to reduce signature sizes
-- [x] q-indexed signatures
+- q-indexed signatures:
+  - [x] Basic q-indexed signature scheme from one-time signature scheme
+  - [x] Public key compression via Merkle tree
 - [ ] Merkle signatures
 - [ ] (De)Serialization of signatures and keys
 - [ ] Command-line interface to sign arbitrary files & verify signatures
