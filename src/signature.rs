@@ -1,5 +1,6 @@
 pub mod basic_lamport;
 pub mod q_indexed_signature;
+pub mod stateless_merkle;
 
 pub type HashType = [u8; 32];
 

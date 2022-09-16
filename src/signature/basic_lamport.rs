@@ -32,6 +32,7 @@ pub type BasicLamportSignature = [[u8; 32]; 256];
 ///     &signature
 /// ))
 /// ```
+#[derive(Clone)]
 pub struct BasicLamportSignatureScheme {
     sk: BasicLamportKey,
     pk: BasicLamportKey,

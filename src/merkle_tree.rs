@@ -14,12 +14,14 @@ use std::str::from_utf8;
 /// let proof = tree.get_proof(17);
 /// assert!(proof.verify(*tree.get_root_hash()));
 /// ```
+#[derive(Clone)]
 pub struct MerkleTree {
     root_hash: [u8; 32],
     root_node: Node,
     depth: usize,
 }
 
+#[derive(Clone)]
 enum Node {
     Leaf(Vec<u8>),
     InternalNode(Box<MerkleTree>, Box<MerkleTree>),

@@ -34,6 +34,7 @@ use rand_chacha::ChaCha20Rng;
 ///     &signature1
 /// ));
 /// ```
+#[derive(Clone)]
 pub struct QIndexedSignatureScheme {
     one_time_signatures: Vec<BasicLamportSignatureScheme>,
     public_key_merkle_tree: MerkleTree,
