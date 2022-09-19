@@ -2,16 +2,20 @@ use crate::signature::q_indexed_signature::{QIndexedSignature, QIndexedSignature
 use crate::signature::{HashType, SignatureScheme};
 use crate::utils::hash_to_string;
 use hmac_sha256::HMAC;
-use rand::{thread_rng, Rng};
+use rand::Rng;
+use rand_chacha::rand_core::SeedableRng;
+use rand_chacha::ChaCha20Rng;
 use std::fmt::{Debug, Formatter};
 
 struct StatelessMerkleSignatureScheme {
-    prf_key: HashType,
+    seed_prf_key: HashType,
+    path_prf_key: HashType,
     root_signature: QIndexedSignatureScheme,
     q: usize,
     depth: usize,
 }
 
+#[derive(PartialEq)]
 struct StatelessMerkleSignature {
     signature_chain: Vec<(HashType, QIndexedSignature)>,
 }
@@ -28,11 +32,13 @@ impl Debug for StatelessMerkleSignature {
 
 impl StatelessMerkleSignatureScheme {
     fn new(seed: HashType, q: usize, depth: usize) -> Self {
-        let prf_key = HMAC::mac(&[0], &seed);
-        let root_seed = HMAC::mac(&[1], &seed);
+        let root_seed = HMAC::mac(&[0], &seed);
+        let seed_prf_key = HMAC::mac(&[1], &seed);
+        let path_prf_key = HMAC::mac(&[1], &seed);
         Self {
             root_signature: QIndexedSignatureScheme::new(q, root_seed),
-            prf_key,
+            seed_prf_key,
+            path_prf_key,
             q,
             depth,
         }
@@ -43,7 +49,7 @@ impl StatelessMerkleSignatureScheme {
             self.root_signature.clone()
         } else {
             let path_bytes: Vec<u8> = path.iter().map(|x| x.to_be_bytes()).flatten().collect();
-            let seed = HMAC::mac(path_bytes, self.prf_key);
+            let seed = HMAC::mac(path_bytes, self.seed_prf_key);
             QIndexedSignatureScheme::new(self.q, seed)
         }
     }
@@ -57,8 +63,8 @@ impl SignatureScheme<HashType, HashType, StatelessMerkleSignature>
     }
 
     fn sign(&mut self, message: HashType) -> StatelessMerkleSignature {
-        // Generate random path
-        let mut rng = thread_rng();
+        // Generate pseudo-random path, using HMAC(path_prf_key, message) as the seed
+        let mut rng = ChaCha20Rng::from_seed(HMAC::mac(&message, self.path_prf_key));
         let path: Vec<usize> = (0..self.depth).map(|_| rng.gen_range(0..self.q)).collect();
 
         let mut signature = Vec::with_capacity(self.depth);
@@ -126,6 +132,14 @@ mod tests {
             [1u8; 32],
             &signature
         ))
+    }
+
+    #[test]
+    fn is_deterministic() {
+        let mut signature_scheme = get_signature_scheme();
+        let signature1 = signature_scheme.sign([1u8; 32]);
+        let signature2 = signature_scheme.sign([1u8; 32]);
+        assert_eq!(signature1, signature2)
     }
 
     #[test]

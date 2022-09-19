@@ -40,6 +40,7 @@ pub struct QIndexedSignatureScheme {
     public_key_merkle_tree: MerkleTree,
 }
 
+#[derive(PartialEq)]
 pub struct QIndexedSignature {
     pub i: usize,
     pub proof: MerkleProof,

@@ -28,6 +28,7 @@ enum Node {
 }
 
 /// A proof that a given datum is at a given index.
+#[derive(PartialEq)]
 pub struct MerkleProof {
     pub data: Vec<u8>,
     pub index: usize,
