@@ -1,7 +1,7 @@
 pub fn hash_to_string(hash: &[u8; 32]) -> String {
-    let mut result = format!("{:x?}", hash[0]);
+    let mut result = format!("{:02x?}", hash[0]);
     for i in 1..32 {
-        result.push_str(&format!("{:x?}", hash[i]));
+        result.push_str(&format!("{:02x?}", hash[i]));
     }
     result
 }

@@ -1,19 +1,38 @@
-use crate::merkle_tree::MerkleProof;
-use crate::signature::basic_lamport::BasicLamportSignature;
-use crate::signature::q_indexed_signature::QIndexedSignatureScheme;
+use crate::signature::q_indexed_signature::{QIndexedSignature, QIndexedSignatureScheme};
 use crate::signature::{HashType, SignatureScheme};
+use crate::utils::hash_to_string;
+use hmac_sha256::HMAC;
 use rand::{thread_rng, Rng};
+use std::fmt::{Debug, Formatter};
 
-struct StatelessMerkleSignature {
+struct StatelessMerkleSignatureScheme {
+    prf_key: HashType,
     root_signature: QIndexedSignatureScheme,
     q: usize,
     depth: usize,
 }
 
-impl StatelessMerkleSignature {
+struct StatelessMerkleSignature {
+    signature_chain: Vec<(HashType, QIndexedSignature)>,
+}
+
+impl Debug for StatelessMerkleSignature {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut result = String::from("Stateless signature:\n");
+        for (message, signature) in &self.signature_chain {
+            result += &format!("- ({}, {})\n", signature.i, hash_to_string(&message));
+        }
+        write!(f, "{}", result)
+    }
+}
+
+impl StatelessMerkleSignatureScheme {
     fn new(seed: HashType, q: usize, depth: usize) -> Self {
+        let prf_key = HMAC::mac(&[0], &seed);
+        let root_seed = HMAC::mac(&[1], &seed);
         Self {
-            root_signature: QIndexedSignatureScheme::new(q, seed),
+            root_signature: QIndexedSignatureScheme::new(q, root_seed),
+            prf_key,
             q,
             depth,
         }
@@ -23,28 +42,21 @@ impl StatelessMerkleSignature {
         if path.len() == 0 {
             self.root_signature.clone()
         } else {
-            // TODO: Derive seed from PRF as F(self.seed, path)
-            let seed = [0u8; 32];
+            let path_bytes: Vec<u8> = path.iter().map(|x| x.to_be_bytes()).flatten().collect();
+            let seed = HMAC::mac(path_bytes, self.prf_key);
             QIndexedSignatureScheme::new(self.q, seed)
         }
     }
 }
 
-impl
-    SignatureScheme<
-        HashType,
-        HashType,
-        Vec<(HashType, (usize, MerkleProof, BasicLamportSignature))>,
-    > for StatelessMerkleSignature
+impl SignatureScheme<HashType, HashType, StatelessMerkleSignature>
+    for StatelessMerkleSignatureScheme
 {
     fn public_key(&self) -> HashType {
         self.root_signature.public_key()
     }
 
-    fn sign(
-        &mut self,
-        message: HashType,
-    ) -> Vec<(HashType, (usize, MerkleProof, BasicLamportSignature))> {
+    fn sign(&mut self, message: HashType) -> StatelessMerkleSignature {
         // Generate random path
         let mut rng = thread_rng();
         let path: Vec<usize> = (0..self.depth).map(|_| rng.gen_range(0..self.q)).collect();
@@ -67,46 +79,49 @@ impl
             }
         }
 
-        signature
+        StatelessMerkleSignature {
+            signature_chain: signature,
+        }
     }
 
-    fn verify(
-        pk: HashType,
-        message: HashType,
-        signature: &Vec<(HashType, (usize, MerkleProof, BasicLamportSignature))>,
-    ) -> bool {
+    fn verify(pk: HashType, message: HashType, signature: &StatelessMerkleSignature) -> bool {
         // TODO: Do I have to verify depth and q?
 
-        for (current_message, one_time_signature) in signature {
+        let mut pk = pk;
+
+        println!("{:?}", signature);
+
+        for (current_message, one_time_signature) in &signature.signature_chain {
             if !QIndexedSignatureScheme::verify(
                 pk,
-                (one_time_signature.0, *current_message),
+                (one_time_signature.i, *current_message),
                 one_time_signature,
             ) {
                 return false;
             }
+            pk = *current_message;
         }
 
         // All signatures are valid, now check that the last message is actually correct
-        signature[signature.len() - 1].0 == message
+        signature.signature_chain[signature.signature_chain.len() - 1].0 == message
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::signature::stateless_merkle::StatelessMerkleSignature;
+    use crate::signature::stateless_merkle::StatelessMerkleSignatureScheme;
     use crate::signature::SignatureScheme;
 
-    fn get_signature_scheme() -> StatelessMerkleSignature {
+    fn get_signature_scheme() -> StatelessMerkleSignatureScheme {
         let seed = [0u8; 32];
-        StatelessMerkleSignature::new(seed, 16, 5)
+        StatelessMerkleSignatureScheme::new(seed, 16, 5)
     }
 
     #[test]
     fn test_correct_signature() {
         let mut signature_scheme = get_signature_scheme();
         let signature = signature_scheme.sign([1u8; 32]);
-        assert!(StatelessMerkleSignature::verify(
+        assert!(StatelessMerkleSignatureScheme::verify(
             signature_scheme.public_key(),
             [1u8; 32],
             &signature
