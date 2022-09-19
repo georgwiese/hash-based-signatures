@@ -17,15 +17,17 @@ struct StatelessMerkleSignatureScheme {
 
 #[derive(PartialEq)]
 struct StatelessMerkleSignature {
-    signature_chain: Vec<(HashType, QIndexedSignature)>,
+    public_key_signatures: Vec<(HashType, QIndexedSignature)>,
+    message_signature: QIndexedSignature,
 }
 
 impl Debug for StatelessMerkleSignature {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut result = String::from("Stateless signature:\n");
-        for (message, signature) in &self.signature_chain {
+        for (message, signature) in &self.public_key_signatures {
             result += &format!("- ({}, {})\n", signature.i, hash_to_string(&message));
         }
+        result += &format!("- ({}, <hashed message>)\n", self.message_signature.i,);
         write!(f, "{}", result)
     }
 }
@@ -63,54 +65,58 @@ impl SignatureScheme<HashType, HashType, StatelessMerkleSignature>
     }
 
     fn sign(&mut self, message: HashType) -> StatelessMerkleSignature {
-        // Even though the message might be a hash already, hash it again to prevent extension attacks:
-        // Otherwise an adversary could create his own q-indexed public key, trick the signer to
-        // sign it and then extend the signature to sign arbitrary messages.
-        let message = Hash::hash(&message);
-
         // Generate pseudo-random path, using HMAC(path_prf_key, message) as the seed
         let mut rng = ChaCha20Rng::from_seed(HMAC::mac(&message, self.path_prf_key));
         let path: Vec<usize> = (0..self.depth).map(|_| rng.gen_range(0..self.q)).collect();
 
-        let mut signature = Vec::with_capacity(self.depth);
+        let mut public_key_signatures = Vec::with_capacity(self.depth);
         let mut current_signing_scheme = self.root_signature.clone();
         for (path_index, signature_index) in path.iter().enumerate() {
-            if path_index < path.len() - 1 {
-                // Internal node, instantiate next indexed signature and sign its public key
-                let next_signature_scheme = self.signature_scheme(&path[..path_index + 1]);
-                let one_time_signature = current_signing_scheme
-                    .sign((*signature_index, next_signature_scheme.public_key()));
+            // Internal node, instantiate next indexed signature and sign its public key
+            let next_signature_scheme = self.signature_scheme(&path[..path_index + 1]);
+            let one_time_signature =
+                current_signing_scheme.sign((*signature_index, next_signature_scheme.public_key()));
 
-                signature.push((next_signature_scheme.public_key(), one_time_signature));
-                current_signing_scheme = next_signature_scheme;
-            } else {
-                // Leaf node, sign message
-                let one_time_signature = current_signing_scheme.sign((*signature_index, message));
-                signature.push((message, one_time_signature));
-            }
+            public_key_signatures.push((next_signature_scheme.public_key(), one_time_signature));
+            current_signing_scheme = next_signature_scheme;
         }
 
+        // Even though the message might be a hash already, hash it again to prevent extension attacks:
+        // Otherwise an adversary could create his own q-indexed public key, trick the signer to
+        // sign it and then extend the signature to sign arbitrary messages.
+        let hashed_message = Hash::hash(&message);
+
+        // Leaf node, sign message
+        let message_signature =
+            current_signing_scheme.sign((*path.last().unwrap(), hashed_message));
+
         StatelessMerkleSignature {
-            signature_chain: signature,
+            public_key_signatures,
+            message_signature,
         }
     }
 
     fn verify(pk: HashType, message: HashType, signature: &StatelessMerkleSignature) -> bool {
-        let mut pk = pk;
+        let mut current_public_key = pk;
 
-        for (current_message, one_time_signature) in &signature.signature_chain {
+        // Verify public keys along path
+        for (public_key, one_time_signature) in &signature.public_key_signatures {
             if !QIndexedSignatureScheme::verify(
-                pk,
-                (one_time_signature.i, *current_message),
+                current_public_key,
+                (one_time_signature.i, *public_key),
                 one_time_signature,
             ) {
                 return false;
             }
-            pk = *current_message;
+            current_public_key = *public_key;
         }
 
-        // All signatures are valid, now check that the last message is actually correct
-        signature.signature_chain[signature.signature_chain.len() - 1].0 == Hash::hash(&message)
+        // Verify message signature
+        QIndexedSignatureScheme::verify(
+            current_public_key,
+            (signature.message_signature.i, Hash::hash(&message)),
+            &signature.message_signature,
+        )
     }
 }
 
