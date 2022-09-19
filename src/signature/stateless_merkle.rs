@@ -7,7 +7,42 @@ use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha20Rng;
 use std::fmt::{Debug, Formatter};
 
-struct StatelessMerkleSignatureScheme {
+/// Stateless Merkle signatures, as described in Section 14.6.3
+/// in the [textbook](http://toc.cryptobook.us/) by Boneh & Shoup.
+///
+/// Builds a tree of depth `depth` and width `q`. For each signature,
+/// a pseudo-random path is selected.
+/// Then, the signature contains a series of q-indexed signatures,
+/// each signing the public key of the next one. The leaf node signs
+/// the hash of the message.
+///
+/// # Examples
+///
+/// ```
+/// use hash_based_signatures::signature::stateless_merkle::StatelessMerkleSignatureScheme;
+/// use hash_based_signatures::signature::SignatureScheme;
+///
+/// let mut signature_scheme = StatelessMerkleSignatureScheme::new([0; 32], 16, 5);
+/// let signature0 = signature_scheme.sign([0u8; 32]);
+/// let signature1 = signature_scheme.sign([1u8; 32]);
+///
+/// assert!(StatelessMerkleSignatureScheme::verify(
+///     signature_scheme.public_key(),
+///     [0u8; 32],
+///     &signature0
+/// ));
+/// assert!(StatelessMerkleSignatureScheme::verify(
+///     signature_scheme.public_key(),
+///     [1u8; 32],
+///     &signature1
+/// ));
+/// assert!(!StatelessMerkleSignatureScheme::verify(
+///     signature_scheme.public_key(),
+///     [2u8; 32],
+///     &signature1
+/// ));
+/// ```
+pub struct StatelessMerkleSignatureScheme {
     seed_prf_key: HashType,
     path_prf_key: HashType,
     root_signature: QIndexedSignatureScheme,
@@ -16,7 +51,7 @@ struct StatelessMerkleSignatureScheme {
 }
 
 #[derive(PartialEq)]
-struct StatelessMerkleSignature {
+pub struct StatelessMerkleSignature {
     public_key_signatures: Vec<(HashType, QIndexedSignature)>,
     message_signature: QIndexedSignature,
 }
@@ -33,7 +68,16 @@ impl Debug for StatelessMerkleSignature {
 }
 
 impl StatelessMerkleSignatureScheme {
-    fn new(seed: HashType, q: usize, depth: usize) -> Self {
+    /// Instantiates the new stateless Merkle signature scheme as a tree with width `q` and depth `depth`.
+    ///
+    /// The resulting tree will have `q**depth` leafs. Because the scheme is broken if the same leaf is
+    /// chosen for two different messages, the expected number of signed messages should not exceed
+    /// `sqrt(q**depth)`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `q` is not a power of two.
+    pub fn new(seed: HashType, q: usize, depth: usize) -> Self {
         let root_seed = HMAC::mac(&[0], &seed);
         let seed_prf_key = HMAC::mac(&[1], &seed);
         let path_prf_key = HMAC::mac(&[1], &seed);
