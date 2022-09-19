@@ -1,9 +1,8 @@
-use orion::hash::digest;
+use hmac_sha256::Hash;
 use rand::prelude::*;
 use rand_chacha::ChaCha20Rng;
 
 use crate::signature::{HashType, SignatureScheme};
-use crate::utils::digest_to_bytes;
 
 pub type BasicLamportKey = [[[u8; 32]; 2]; 256];
 pub type BasicLamportSignature = [[u8; 32]; 256];
@@ -56,7 +55,7 @@ impl BasicLamportSignatureScheme {
         let mut pk = [[[0; 32]; 2]; 256];
         for bit_to_sign in 0..256 {
             for bit in 0..2 {
-                pk[bit_to_sign][bit] = digest_to_bytes(digest(&sk[bit_to_sign][bit]).unwrap());
+                pk[bit_to_sign][bit] = Hash::hash(&sk[bit_to_sign][bit]);
             }
         }
         Self {
@@ -110,7 +109,7 @@ impl SignatureScheme<BasicLamportKey, HashType, BasicLamportSignature>
             let byte = message[byte_index];
             for local_bit_index in 0..8 {
                 let bit_index = byte_index * 8 + local_bit_index;
-                let hash = digest_to_bytes(digest(&signature[bit_index]).unwrap());
+                let hash = Hash::hash(&signature[bit_index]);
                 let pk_index_to_expect = (byte & (1 << local_bit_index) != 0) as usize;
                 is_correct &= hash == pk[bit_index][pk_index_to_expect];
             }
