@@ -1,7 +1,7 @@
 use crate::signature::q_indexed_signature::{QIndexedSignature, QIndexedSignatureScheme};
 use crate::signature::{HashType, SignatureScheme};
 use crate::utils::hash_to_string;
-use hmac_sha256::HMAC;
+use hmac_sha256::{Hash, HMAC};
 use rand::Rng;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha20Rng;
@@ -63,6 +63,11 @@ impl SignatureScheme<HashType, HashType, StatelessMerkleSignature>
     }
 
     fn sign(&mut self, message: HashType) -> StatelessMerkleSignature {
+        // Even though the message might be a hash already, hash it again to prevent extension attacks:
+        // Otherwise an adversary could create his own q-indexed public key, trick the signer to
+        // sign it and then extend the signature to sign arbitrary messages.
+        let message = Hash::hash(&message);
+
         // Generate pseudo-random path, using HMAC(path_prf_key, message) as the seed
         let mut rng = ChaCha20Rng::from_seed(HMAC::mac(&message, self.path_prf_key));
         let path: Vec<usize> = (0..self.depth).map(|_| rng.gen_range(0..self.q)).collect();
@@ -91,11 +96,7 @@ impl SignatureScheme<HashType, HashType, StatelessMerkleSignature>
     }
 
     fn verify(pk: HashType, message: HashType, signature: &StatelessMerkleSignature) -> bool {
-        // TODO: Do I have to verify depth and q?
-
         let mut pk = pk;
-
-        println!("{:?}", signature);
 
         for (current_message, one_time_signature) in &signature.signature_chain {
             if !QIndexedSignatureScheme::verify(
@@ -109,7 +110,7 @@ impl SignatureScheme<HashType, HashType, StatelessMerkleSignature>
         }
 
         // All signatures are valid, now check that the last message is actually correct
-        signature.signature_chain[signature.signature_chain.len() - 1].0 == message
+        signature.signature_chain[signature.signature_chain.len() - 1].0 == Hash::hash(&message)
     }
 }
 
@@ -144,6 +145,12 @@ mod tests {
 
     #[test]
     fn test_incorrect_signature() {
-        // TODO
+        let mut signature_scheme = get_signature_scheme();
+        let signature = signature_scheme.sign([1u8; 32]);
+        assert!(!StatelessMerkleSignatureScheme::verify(
+            signature_scheme.public_key(),
+            [2u8; 32],
+            &signature
+        ))
     }
 }

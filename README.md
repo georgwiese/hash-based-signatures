@@ -24,6 +24,6 @@ This is the current list of finished & planned steps:
 - q-indexed signatures:
   - [x] Basic q-indexed signature scheme from one-time signature scheme
   - [x] Public key compression via Merkle tree
-- [ ] Merkle signatures
+- [x] Merkle signatures
 - [ ] (De)Serialization of signatures and keys
 - [ ] Command-line interface to sign arbitrary files & verify signatures
