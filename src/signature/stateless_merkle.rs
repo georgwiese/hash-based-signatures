@@ -5,7 +5,15 @@ use hmac_sha256::{Hash, HMAC};
 use rand::Rng;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha20Rng;
+use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Formatter};
+
+#[derive(Serialize, Deserialize)]
+pub struct StatelessMerklePrivateKey {
+    pub seed: HashType,
+    pub width: usize,
+    pub depth: usize,
+}
 
 /// Stateless Merkle signatures, as described in Section 14.6.3
 /// in the [textbook](http://toc.cryptobook.us/) by Boneh & Shoup.
@@ -50,7 +58,7 @@ pub struct StatelessMerkleSignatureScheme {
     depth: usize,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Serialize, Deserialize)]
 pub struct StatelessMerkleSignature {
     public_key_signatures: Vec<(HashType, QIndexedSignature)>,
     message_signature: QIndexedSignature,
@@ -88,6 +96,10 @@ impl StatelessMerkleSignatureScheme {
             q,
             depth,
         }
+    }
+
+    pub fn from_private_key(key: &StatelessMerklePrivateKey) -> Self {
+        Self::new(key.seed, key.width, key.depth)
     }
 
     fn signature_scheme(&self, path: &[usize]) -> QIndexedSignatureScheme {
