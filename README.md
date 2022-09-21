@@ -25,5 +25,10 @@ This is the current list of finished & planned steps:
   - [x] Basic q-indexed signature scheme from one-time signature scheme
   - [x] Public key compression via Merkle tree
 - [x] Merkle signatures
-- [ ] (De)Serialization of signatures and keys
-- [ ] Command-line interface to sign arbitrary files & verify signatures
+- [x] (De)Serialization of signatures and keys
+- [x] Command-line interface to sign arbitrary files & verify signatures
+
+## Command line interface
+
+Check out [the example](./example)!
+
