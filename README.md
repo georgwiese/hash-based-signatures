@@ -25,5 +25,22 @@ This is the current list of finished & planned steps:
   - [x] Basic q-indexed signature scheme from one-time signature scheme
   - [x] Public key compression via Merkle tree
 - [x] Merkle signatures
-- [ ] (De)Serialization of signatures and keys
-- [ ] Command-line interface to sign arbitrary files & verify signatures
+- [x] (De)Serialization of signatures and keys
+- [x] Command-line interface to sign arbitrary files & verify signatures
+
+## Command line interface
+
+To get started with signature verification, check out [the example](./example)!
+
+To sign files, run:
+```bash
+$ cargo run -- key-gen
+```
+
+This will create a `.private_key.json` in your working directory and print the corresponding public key.
+Keep it private!
+
+To sign a file, make sure that you have a `.private_key.json` in your working directory and run:
+```bash
+$ cargo run -- sign example/readme.md
+```

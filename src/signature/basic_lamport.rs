@@ -1,11 +1,19 @@
 use hmac_sha256::Hash;
 use rand::prelude::*;
 use rand_chacha::ChaCha20Rng;
+use serde::{Deserialize, Serialize};
+use serde_big_array::BigArray;
 
 use crate::signature::{HashType, SignatureScheme};
 
 pub type BasicLamportKey = [[[u8; 32]; 2]; 256];
-pub type BasicLamportSignature = [[u8; 32]; 256];
+
+// Needs to be wrapped in a struct, so that we can derive the (de)serialization traits
+#[derive(PartialEq, Serialize, Deserialize)]
+pub struct BasicLamportSignature {
+    #[serde(with = "BigArray")]
+    preimages: [[u8; 32]; 256],
+}
 
 /// The basic Lamport one-time signature, as described in Section 14.1
 /// in the [textbook](http://toc.cryptobook.us/) by Boneh & Shoup.
@@ -100,7 +108,9 @@ impl SignatureScheme<BasicLamportKey, HashType, BasicLamportSignature>
                 }
             }
         }
-        signature
+        BasicLamportSignature {
+            preimages: signature,
+        }
     }
 
     fn verify(pk: BasicLamportKey, message: HashType, signature: &BasicLamportSignature) -> bool {
@@ -109,7 +119,7 @@ impl SignatureScheme<BasicLamportKey, HashType, BasicLamportSignature>
             let byte = message[byte_index];
             for local_bit_index in 0..8 {
                 let bit_index = byte_index * 8 + local_bit_index;
-                let hash = Hash::hash(&signature[bit_index]);
+                let hash = Hash::hash(&signature.preimages[bit_index]);
                 let pk_index_to_expect = (byte & (1 << local_bit_index) != 0) as usize;
                 is_correct &= hash == pk[bit_index][pk_index_to_expect];
             }
@@ -120,7 +130,7 @@ impl SignatureScheme<BasicLamportKey, HashType, BasicLamportSignature>
 
 #[cfg(test)]
 mod tests {
-    use crate::signature::basic_lamport::BasicLamportSignatureScheme;
+    use crate::signature::basic_lamport::{BasicLamportSignature, BasicLamportSignatureScheme};
     use crate::signature::SignatureScheme;
 
     fn get_signature_scheme() -> BasicLamportSignatureScheme {
@@ -142,10 +152,13 @@ mod tests {
     #[test]
     fn test_incorrect_signature() {
         let signature_scheme = get_signature_scheme();
+        let incorrect_signature = BasicLamportSignature {
+            preimages: [[0u8; 32]; 256],
+        };
         assert!(!BasicLamportSignatureScheme::verify(
             signature_scheme.public_key(),
             [1u8; 32],
-            &[[0u8; 32]; 256]
+            &incorrect_signature
         ))
     }
 

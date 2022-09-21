@@ -3,6 +3,7 @@ use crate::signature::basic_lamport::{BasicLamportSignature, BasicLamportSignatu
 use crate::signature::{HashType, SignatureScheme};
 use rand::prelude::*;
 use rand_chacha::ChaCha20Rng;
+use serde::{Deserialize, Serialize};
 
 /// The q-indexed signature scheme, as described in Section 14.6.1
 /// in the [textbook](http://toc.cryptobook.us/) by Boneh & Shoup.
@@ -40,7 +41,7 @@ pub struct QIndexedSignatureScheme {
     public_key_merkle_tree: MerkleTree,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Serialize, Deserialize)]
 pub struct QIndexedSignature {
     pub i: usize,
     pub proof: MerkleProof,

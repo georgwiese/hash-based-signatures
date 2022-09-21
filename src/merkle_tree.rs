@@ -1,5 +1,6 @@
 use crate::utils::{get_least_significant_bits, hash_to_string};
 use hmac_sha256::Hash;
+use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Formatter};
 use std::str::from_utf8;
 
@@ -28,7 +29,7 @@ enum Node {
 }
 
 /// A proof that a given datum is at a given index.
-#[derive(PartialEq)]
+#[derive(PartialEq, Serialize, Deserialize)]
 pub struct MerkleProof {
     pub data: Vec<u8>,
     pub index: usize,
