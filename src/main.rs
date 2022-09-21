@@ -1,18 +1,40 @@
-use hash_based_signatures::signature::stateless_merkle::{
-    StatelessMerklePrivateKey, StatelessMerkleSignatureScheme,
-};
+use clap::{Parser, Subcommand};
+use hash_based_signatures::signature::stateless_merkle::StatelessMerkleSignatureScheme;
 use hash_based_signatures::signature::{HashType, SignatureScheme};
-use hash_based_signatures::utils::hash_to_string;
+use hash_based_signatures::utils::{hash_to_string, string_to_hash};
 use hmac_sha256::Hash;
 use rand;
 use rand::RngCore;
 use rmp_serde;
-
 use std::fs;
 
 use std::path::PathBuf;
 
-fn keygen(width: usize, depth: usize) -> HashType {
+#[derive(Parser, Debug)]
+struct Arguments {
+    #[clap(subcommand)]
+    command: Commands,
+}
+
+#[derive(Subcommand, Debug)]
+enum Commands {
+    KeyGen {
+        #[clap(default_value_t = 16)]
+        width: usize,
+        #[clap(default_value_t = 32)]
+        depth: usize,
+    },
+    Sign {
+        path: PathBuf,
+    },
+    Verify {
+        file_path: PathBuf,
+        signature_path: PathBuf,
+        public_key: String,
+    },
+}
+
+fn keygen(width: usize, depth: usize) {
     println!();
     println!(" #######################");
     println!("   Generating key");
@@ -23,17 +45,16 @@ fn keygen(width: usize, depth: usize) -> HashType {
     let mut rng = rand::thread_rng();
     rng.fill_bytes(&mut seed);
 
-    let private_key = StatelessMerklePrivateKey { seed, width, depth };
-    let public_key = StatelessMerkleSignatureScheme::from_private_key(&private_key).public_key();
+    let signature_scheme = StatelessMerkleSignatureScheme::new(seed, width, depth);
+    let private_key = signature_scheme.private_key();
+    let public_key = signature_scheme.public_key();
 
-    let private_key_json = serde_json::to_string(&private_key).unwrap();
+    let private_key_json = serde_json::to_string_pretty(&private_key).unwrap();
     let output_path = ".private_key.json";
     fs::write(output_path, private_key_json).expect("Could not write private key");
 
     println!("Public key:       {}", hash_to_string(&public_key));
     println!("Private key path: {}", output_path);
-
-    public_key
 }
 
 fn sign(path: PathBuf) {
@@ -85,11 +106,16 @@ fn verify(file_path: PathBuf, signature_path: PathBuf, public_key: HashType) {
 }
 
 fn main() {
-    let public_key = keygen(16, 5);
-    sign(PathBuf::from("Cargo.toml"));
-    verify(
-        PathBuf::from("Cargo.toml"),
-        PathBuf::from("Cargo.toml.signature"),
-        public_key,
-    );
+    let args: Arguments = Arguments::parse();
+    println!("{:?}", args);
+
+    match args.command {
+        Commands::KeyGen { width, depth } => keygen(width, depth),
+        Commands::Sign { path } => sign(path),
+        Commands::Verify {
+            file_path,
+            signature_path,
+            public_key,
+        } => verify(file_path, signature_path, string_to_hash(&public_key)),
+    }
 }

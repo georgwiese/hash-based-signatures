@@ -1,6 +1,6 @@
 use crate::signature::q_indexed_signature::{QIndexedSignature, QIndexedSignatureScheme};
 use crate::signature::{HashType, SignatureScheme};
-use crate::utils::hash_to_string;
+use crate::utils::{hash_to_string, string_to_hash};
 use hmac_sha256::{Hash, HMAC};
 use rand::Rng;
 use rand_chacha::rand_core::SeedableRng;
@@ -10,9 +10,11 @@ use std::fmt::{Debug, Formatter};
 
 #[derive(Serialize, Deserialize)]
 pub struct StatelessMerklePrivateKey {
-    pub seed: HashType,
+    pub seed_hex: String,
     pub width: usize,
     pub depth: usize,
+    // This can be derived from the seed, but might be useful for someone who inspects the JSON
+    pub public_key: String,
 }
 
 /// Stateless Merkle signatures, as described in Section 14.6.3
@@ -51,6 +53,7 @@ pub struct StatelessMerklePrivateKey {
 /// ));
 /// ```
 pub struct StatelessMerkleSignatureScheme {
+    seed: HashType,
     seed_prf_key: HashType,
     path_prf_key: HashType,
     root_signature: QIndexedSignatureScheme,
@@ -90,6 +93,7 @@ impl StatelessMerkleSignatureScheme {
         let seed_prf_key = HMAC::mac(&[1], &seed);
         let path_prf_key = HMAC::mac(&[1], &seed);
         Self {
+            seed,
             root_signature: QIndexedSignatureScheme::new(q, root_seed),
             seed_prf_key,
             path_prf_key,
@@ -99,7 +103,16 @@ impl StatelessMerkleSignatureScheme {
     }
 
     pub fn from_private_key(key: &StatelessMerklePrivateKey) -> Self {
-        Self::new(key.seed, key.width, key.depth)
+        Self::new(string_to_hash(&key.seed_hex), key.width, key.depth)
+    }
+
+    pub fn private_key(&self) -> StatelessMerklePrivateKey {
+        StatelessMerklePrivateKey {
+            seed_hex: hash_to_string(&self.seed),
+            public_key: hash_to_string(&self.public_key()),
+            width: self.q,
+            depth: self.depth,
+        }
     }
 
     fn signature_scheme(&self, path: &[usize]) -> QIndexedSignatureScheme {
