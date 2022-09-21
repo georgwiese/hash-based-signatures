@@ -43,7 +43,6 @@ pub struct QIndexedSignatureScheme {
 
 #[derive(PartialEq, Serialize, Deserialize)]
 pub struct QIndexedSignature {
-    pub i: usize,
     pub proof: MerkleProof,
     pub one_time_signature: BasicLamportSignature,
 }
@@ -94,7 +93,6 @@ impl SignatureScheme<HashType, (usize, HashType), QIndexedSignature> for QIndexe
         let (i, message) = message;
         let proof = self.public_key_merkle_tree.get_proof(i);
         QIndexedSignature {
-            i,
             proof,
             one_time_signature: self.one_time_signatures[i].sign(message),
         }
@@ -103,7 +101,7 @@ impl SignatureScheme<HashType, (usize, HashType), QIndexedSignature> for QIndexe
     fn verify(pk: HashType, message: (usize, HashType), signature: &QIndexedSignature) -> bool {
         let (i_m, message) = message;
 
-        if i_m != signature.i {
+        if i_m != signature.proof.index {
             return false;
         }
 

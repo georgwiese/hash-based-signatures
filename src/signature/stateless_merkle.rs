@@ -71,9 +71,16 @@ impl Debug for StatelessMerkleSignature {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut result = String::from("Stateless signature:\n");
         for (message, signature) in &self.public_key_signatures {
-            result += &format!("- ({}, {})\n", signature.i, hash_to_string(&message));
+            result += &format!(
+                "- ({}, {})\n",
+                signature.proof.index,
+                hash_to_string(&message)
+            );
         }
-        result += &format!("- ({}, <hashed message>)\n", self.message_signature.i,);
+        result += &format!(
+            "- ({}, <hashed message>)\n",
+            self.message_signature.proof.index,
+        );
         write!(f, "{}", result)
     }
 }
@@ -172,7 +179,7 @@ impl SignatureScheme<HashType, HashType, StatelessMerkleSignature>
         for (public_key, one_time_signature) in &signature.public_key_signatures {
             if !QIndexedSignatureScheme::verify(
                 current_public_key,
-                (one_time_signature.i, *public_key),
+                (one_time_signature.proof.index, *public_key),
                 one_time_signature,
             ) {
                 return false;
@@ -183,7 +190,10 @@ impl SignatureScheme<HashType, HashType, StatelessMerkleSignature>
         // Verify message signature
         QIndexedSignatureScheme::verify(
             current_public_key,
-            (signature.message_signature.i, Hash::hash(&message)),
+            (
+                signature.message_signature.proof.index,
+                Hash::hash(&message),
+            ),
             &signature.message_signature,
         )
     }

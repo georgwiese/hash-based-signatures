@@ -88,7 +88,7 @@ fn sign(path: PathBuf) {
     fs::write(output_path, &signature_bytes).expect("Could not write signature");
 }
 
-fn verify(file_path: PathBuf, signature_path: PathBuf, public_key: HashType) {
+fn verify(file_path: PathBuf, signature_path: PathBuf, public_key: HashType) -> bool {
     println!();
     println!(" #######################");
     println!("   Verifying file");
@@ -106,6 +106,8 @@ fn verify(file_path: PathBuf, signature_path: PathBuf, public_key: HashType) {
     println!("File Path:      {}", &file_path.to_str().unwrap());
     println!("Signature Path: {}", &signature_path.to_str().unwrap());
     println!("Valid:          {}", verifies);
+
+    verifies
 }
 
 fn main() {
@@ -118,6 +120,27 @@ fn main() {
             file_path,
             signature_path,
             public_key,
-        } => verify(file_path, signature_path, string_to_hash(&public_key)),
+        } => {
+            verify(file_path, signature_path, string_to_hash(&public_key));
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::verify;
+    use hash_based_signatures::utils::string_to_hash;
+    use std::path::PathBuf;
+
+    #[test]
+    fn example_verifies() {
+        let verifies = verify(
+            PathBuf::from("example/readme.md"),
+            PathBuf::from("example/readme.md.signature"),
+            string_to_hash(&String::from(
+                "97d45a522cb1f497ef2c55942b402b6dfedd1efd75cbe2d0cd19b4067cf01c95",
+            )),
+        );
+        assert!(verifies)
     }
 }
