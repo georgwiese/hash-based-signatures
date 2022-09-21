@@ -30,5 +30,17 @@ This is the current list of finished & planned steps:
 
 ## Command line interface
 
-Check out [the example](./example)!
+To get started with signature verification, check out [the example](./example)!
 
+To sign files, run:
+```bash
+$ cargo run -- key-gen
+```
+
+This will create a `.private_key.json` in your working directory and print the corresponding public key.
+Keep it private!
+
+To sign a file, make sure that you have a `.private_key.json` in your working directory and run:
+```bash
+$ cargo run -- sign example/readme.md
+```

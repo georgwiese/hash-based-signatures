@@ -49,7 +49,8 @@ fn keygen(width: usize, depth: usize) {
     let private_key = signature_scheme.private_key();
     let public_key = signature_scheme.public_key();
 
-    let private_key_json = serde_json::to_string_pretty(&private_key).unwrap();
+    let private_key_json =
+        serde_json::to_string_pretty(&private_key).expect("Error serializing private key");
     let output_path = ".private_key.json";
     fs::write(output_path, private_key_json).expect("Could not write private key");
 
@@ -65,8 +66,9 @@ fn sign(path: PathBuf) {
     println!();
 
     let data = fs::read(&path).expect("Unable to read file");
-    let private_key_json = fs::read_to_string(".private_key.json").unwrap();
-    let private_key = serde_json::from_str(&private_key_json).unwrap();
+    let private_key_json =
+        fs::read_to_string(".private_key.json").expect("Error reading private key");
+    let private_key = serde_json::from_str(&private_key_json).expect("Error parsing private key");
 
     let file_hash = Hash::hash(&data);
     let mut signature_scheme = StatelessMerkleSignatureScheme::from_private_key(&private_key);
@@ -82,7 +84,7 @@ fn sign(path: PathBuf) {
     let output_path = format!("{}.signature", path.to_str().unwrap());
     println!("Signature path: {}", output_path);
 
-    let signature_bytes = rmp_serde::to_vec(&signature).unwrap();
+    let signature_bytes = rmp_serde::to_vec(&signature).expect("Error serializing signature");
     fs::write(output_path, &signature_bytes).expect("Could not write signature");
 }
 
@@ -96,7 +98,8 @@ fn verify(file_path: PathBuf, signature_path: PathBuf, public_key: HashType) {
     let data = fs::read(&file_path).expect("Unable to read file");
     let file_hash = Hash::hash(&data);
 
-    let signature = rmp_serde::from_slice(&fs::read(&signature_path).unwrap()).unwrap();
+    let signature_bytes = fs::read(&signature_path).expect("Error reading signature");
+    let signature = rmp_serde::from_slice(&signature_bytes).expect("Error parsing signature");
 
     let verifies = StatelessMerkleSignatureScheme::verify(public_key, file_hash, &signature);
 
@@ -107,7 +110,6 @@ fn verify(file_path: PathBuf, signature_path: PathBuf, public_key: HashType) {
 
 fn main() {
     let args: Arguments = Arguments::parse();
-    println!("{:?}", args);
 
     match args.command {
         Commands::KeyGen { width, depth } => keygen(width, depth),
