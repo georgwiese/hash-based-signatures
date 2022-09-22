@@ -23,7 +23,9 @@ pub fn string_to_hash(hash_string: &String) -> HashType {
 
 /// Gets the `bits` least significant bits of `index`,
 /// sorted from most significant to least significant.
-pub fn get_least_significant_bits(index: usize, bits: usize) -> Vec<bool> {
+pub fn get_least_significant_bits(index: usize, bits: usize) -> Vec<bool>
+where
+{
     let mut result = Vec::new();
     for i in (0..bits).rev() {
         result.push((index & (1 << i)) != 0)
@@ -31,10 +33,26 @@ pub fn get_least_significant_bits(index: usize, bits: usize) -> Vec<bool> {
     result
 }
 
+// Converts a vector of bits to an unsigned integer, corresponding to
+// the big-endian interpretation of the bit string.
+//
+// # Panics
+// Panics if the number of bits is bigger than 8.
+pub fn bits_to_unsigned_int(bits: &[bool]) -> u8 {
+    assert!(bits.len() > 8);
+    let mut result = 0;
+    for i in 0..bits.len() {
+        result = result | (1 << (bits.len() - 1 - i));
+    }
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use crate::signature::HashType;
-    use crate::utils::{get_least_significant_bits, hash_to_string, string_to_hash};
+    use crate::utils::{
+        bits_to_unsigned_int, get_least_significant_bits, hash_to_string, string_to_hash,
+    };
 
     #[test]
     fn test_get_least_significant_bits() {
@@ -42,6 +60,11 @@ mod tests {
             get_least_significant_bits(10, 5),
             vec![false, true, false, true, false]
         )
+    }
+
+    #[test]
+    fn test_bits_to_unsigned_int() {
+        assert_eq!(bits_to_unsigned_int(&[false, true, false, true, false]), 10)
     }
 
     fn get_test_hash() -> (HashType, String) {

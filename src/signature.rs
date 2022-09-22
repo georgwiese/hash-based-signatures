@@ -1,6 +1,7 @@
 pub mod basic_lamport;
 pub mod q_indexed_signature;
 pub mod stateless_merkle;
+pub mod winternitz;
 
 pub type HashType = [u8; 32];
 
