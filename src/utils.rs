@@ -39,10 +39,12 @@ where
 // # Panics
 // Panics if the number of bits is bigger than 8.
 pub fn bits_to_unsigned_int(bits: &[bool]) -> u8 {
-    assert!(bits.len() > 8);
+    assert!(bits.len() <= 8);
     let mut result = 0;
     for i in 0..bits.len() {
-        result = result | (1 << (bits.len() - 1 - i));
+        if bits[i] {
+            result = result | (1 << (bits.len() - 1 - i));
+        }
     }
     result
 }

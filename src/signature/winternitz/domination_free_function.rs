@@ -10,7 +10,7 @@ fn calculate_bits_to_combine(d: u64) -> (usize, usize) {
         panic!("d + 1 is not a power of two!");
     }
     let log2_bits_to_combine = (bits_to_combine as f64).log2() as usize;
-    if (1 << log2_bits_to_combine) != log2_bits_to_combine {
+    if (1 << log2_bits_to_combine) != bits_to_combine {
         panic!("d + 1 is not of the form 2^(2^x)!");
     }
 
@@ -73,7 +73,36 @@ mod tests {
     fn test_domination_free_function_0s_d1() {
         let result = domination_free_function([0; 32], 1);
         let mut expected = vec![0u8; 256];
-        expected.extend([1u8; 8]);
+
+        // Maximal value of c is 2^8
+        expected.extend([1, 0, 0, 0, 0, 0, 0, 0, 0]);
+
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_domination_free_function_0s_d3() {
+        let result = domination_free_function([0; 32], 3);
+        let mut expected = vec![0u8; 128];
+
+        // TODO
+        // bits_to_combine is 2
+        // Maximal value of c is 3 * 128 = 0x180 = 11000 (base 4)
+        // Which should be encoded in 10 2-bit integers
+        expected.extend([1, 2, 0, 0, 0]);
+
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_domination_free_function_0s_d15() {
+        let result = domination_free_function([0; 32], 15);
+        let mut expected = vec![0u8; 64];
+
+        // bits_to_combine is 4
+        // Maximal value of c is 15 * 64 = 0x3c0
+        // Which should be encoded in 3 4-bit integers
+        expected.extend([3, 0xc, 0]);
 
         assert_eq!(result, expected);
     }
