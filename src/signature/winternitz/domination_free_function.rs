@@ -87,10 +87,9 @@ mod tests {
         let result = domination_free_function([0; 32], 3);
         let mut expected = vec![0u8; 128];
 
-        // TODO
         // bits_to_combine is 2
-        // Maximal value of c is 3 * 128 = 0x180 = 11000 (base 4)
-        // Which should be encoded in 10 2-bit integers
+        // Maximal value of c is 3 * 128 = 0x180 = 12000 (base 4)
+        // Which should be encoded in 5 2-bit integers
         expected.extend([1, 2, 0, 0, 0]);
 
         assert_eq!(result, expected);
@@ -114,7 +113,7 @@ mod tests {
         let result = domination_free_function([0; 32], 255);
         let mut expected = vec![0u8; 32];
 
-        // bits_to_combine is 4
+        // bits_to_combine is 8
         // Maximal value of c is 255 * 32 = 0x1FE0
         // Which should be encoded in 2 16-bit integers
         expected.extend([0x1f, 0xe0]);
@@ -127,9 +126,8 @@ mod tests {
         let result = domination_free_function([255; 32], 255);
         let mut expected = vec![255u8; 32];
 
-        // bits_to_combine is 4
-        // Maximal value of c is 255 * 32 = 0x1FE0
-        // Which should be encoded in 2 16-bit integers
+        // bits_to_combine is 16
+        // c should be 0, encoded in 2 16-bit integers
         expected.extend([0, 0]);
 
         assert_eq!(result, expected);
