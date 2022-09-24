@@ -6,10 +6,11 @@ use hmac_sha256::Hash;
 use rand::prelude::*;
 use rand_chacha::ChaCha20Rng;
 
-type WinternitzKey = Vec<[u8; 32]>;
-type WinternitzSignature = (u64, Vec<[u8; 32]>);
+pub type WinternitzKey = Vec<[u8; 32]>;
+pub type WinternitzSignature = (u64, Vec<[u8; 32]>);
 
-struct WinternitzSignatureScheme {
+#[derive(Clone)]
+pub struct WinternitzSignatureScheme {
     sk: WinternitzKey,
     pk: WinternitzKey,
     d: D,

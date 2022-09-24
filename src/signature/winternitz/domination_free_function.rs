@@ -1,6 +1,7 @@
 use crate::signature::HashType;
 use crate::utils::{bits_to_unsigned_int, get_least_significant_bits};
 
+#[derive(Clone, Copy)]
 pub struct D {
     pub d: u64,
     log_log_d_plus_1: usize,
