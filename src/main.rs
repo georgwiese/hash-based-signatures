@@ -85,7 +85,13 @@ fn sign(path: PathBuf) {
     println!("Signature path: {}", output_path);
 
     let signature_bytes = rmp_serde::to_vec(&signature).expect("Error serializing signature");
-    fs::write(output_path, &signature_bytes).expect("Could not write signature");
+    fs::write(&output_path, &signature_bytes).expect("Could not write signature");
+
+    // TODO: Remove debug output
+    let signature_json =
+        serde_json::to_string_pretty(&signature).expect("Error serializing signature");
+    fs::write(format!("{}.json", &output_path), signature_json)
+        .expect("Could not write signature_json");
 }
 
 fn verify(file_path: PathBuf, signature_path: PathBuf, public_key: HashType) -> bool {
@@ -138,7 +144,7 @@ mod tests {
             PathBuf::from("example/readme.md"),
             PathBuf::from("example/readme.md.signature"),
             string_to_hash(&String::from(
-                "97d45a522cb1f497ef2c55942b402b6dfedd1efd75cbe2d0cd19b4067cf01c95",
+                "5480d297f1b27c98e4aa9956c1fc288dbc96e87e5d1e05236e127d516c00f9d0",
             )),
         );
         assert!(verifies)
