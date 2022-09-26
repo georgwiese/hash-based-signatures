@@ -2,6 +2,7 @@ pub mod domination_free_function;
 
 use crate::signature::winternitz::domination_free_function::{domination_free_function, D};
 use crate::signature::{HashType, SignatureScheme};
+use crate::utils::{bits_to_unsigned_ints, get_least_significant_bits};
 use hmac_sha256::Hash;
 use rand::prelude::*;
 use rand_chacha::ChaCha20Rng;
@@ -16,14 +17,24 @@ pub struct WinternitzSignatureScheme {
     d: D,
 }
 
-fn hash_n_times(input: HashType, n: usize) -> HashType {
-    let mut value = input;
+fn hash_chain(input: HashType, start: usize, end: usize) -> HashType {
+    let mut current_hash_value = input;
+    let mut counter_buffer = [0u8; 32];
 
-    for _ in 0..n {
-        // TODO: Use independent hash functions
-        value = Hash::hash(&value);
+    assert!(end < (1 << 32));
+
+    for i in start..end {
+        // Encode i as a 32-bit value into the buffer
+        let index_bitstring = get_least_significant_bits(i, 32);
+        let index_bytes = bits_to_unsigned_ints(&index_bitstring);
+        assert_eq!(index_bytes.len(), 4);
+        for i in 0..4 {
+            counter_buffer[i] = index_bytes[i];
+        }
+
+        current_hash_value = Hash::hash(&[counter_buffer, current_hash_value].concat());
     }
-    value
+    current_hash_value
 }
 
 impl WinternitzSignatureScheme {
@@ -39,7 +50,7 @@ impl WinternitzSignatureScheme {
             rng.fill_bytes(&mut buffer);
             sk.push(buffer);
 
-            pk.push(hash_n_times(buffer, d.d as usize));
+            pk.push(hash_chain(buffer, 0, d.d as usize));
         }
 
         Self { sk, pk, d }
@@ -58,7 +69,7 @@ impl SignatureScheme<WinternitzKey, HashType, WinternitzSignature> for Winternit
         assert_eq!(times_to_hash.len(), self.sk.len());
 
         for (sk_value, n) in self.sk.iter().zip(times_to_hash) {
-            signature.push(hash_n_times(*sk_value, n as usize))
+            signature.push(hash_chain(*sk_value, 0, n as usize))
         }
 
         (self.d.d, signature)
@@ -74,9 +85,10 @@ impl SignatureScheme<WinternitzKey, HashType, WinternitzSignature> for Winternit
         }
 
         for (signature_value, times_hashed) in signature.iter().zip(times_to_hash) {
-            expected_pk.push(hash_n_times(
+            expected_pk.push(hash_chain(
                 *signature_value,
-                *d as usize - times_hashed as usize,
+                times_hashed as usize,
+                *d as usize,
             ))
         }
         expected_pk == pk

@@ -73,6 +73,15 @@ fn sign(path: PathBuf) {
     let file_hash = Hash::hash(&data);
     let mut signature_scheme = StatelessMerkleSignatureScheme::from_private_key(&private_key);
 
+    if string_to_hash(&private_key.public_key) != signature_scheme.public_key() {
+        panic!(
+            "The public key referenced in .private_key.json cannot be derived from the private key. \
+                This is probably because of an incompatible implementation change. \
+                Re-run key generation or manually change the public key to {}",
+            hash_to_string(&signature_scheme.public_key())
+        )
+    }
+
     println!("File Path:      {}", &path.to_str().unwrap());
     println!("Hash:           {}", hash_to_string(&file_hash));
     println!(
@@ -144,7 +153,7 @@ mod tests {
             PathBuf::from("example/readme.md"),
             PathBuf::from("example/readme.md.signature"),
             string_to_hash(&String::from(
-                "5480d297f1b27c98e4aa9956c1fc288dbc96e87e5d1e05236e127d516c00f9d0",
+                "d4c280791e7712789c21babb323c8b9ab5631f36bcef75c8ec4a2466d69057fe",
             )),
         );
         assert!(verifies)

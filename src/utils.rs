@@ -1,4 +1,5 @@
 use crate::signature::HashType;
+use std::cmp::min;
 
 pub fn hash_to_string(hash: &HashType) -> String {
     let mut result = format!("{:02x?}", hash[0]);
@@ -49,11 +50,23 @@ pub fn bits_to_unsigned_int(bits: &[bool]) -> u8 {
     result
 }
 
+// Converts a slice of bits to a vector of u8s
+pub fn bits_to_unsigned_ints(bits: &[bool]) -> Vec<u8> {
+    let size = (bits.len() as f32 / 8.0).ceil() as usize;
+    let mut result = Vec::with_capacity(size);
+    for i in 0..size {
+        let end_bit = min((i + 1) * 8, bits.len());
+        result.push(bits_to_unsigned_int(&bits[i * 8..end_bit]));
+    }
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use crate::signature::HashType;
     use crate::utils::{
-        bits_to_unsigned_int, get_least_significant_bits, hash_to_string, string_to_hash,
+        bits_to_unsigned_int, bits_to_unsigned_ints, get_least_significant_bits, hash_to_string,
+        string_to_hash,
     };
 
     #[test]
@@ -67,6 +80,16 @@ mod tests {
     #[test]
     fn test_bits_to_unsigned_int() {
         assert_eq!(bits_to_unsigned_int(&[false, true, false, true, false]), 10)
+    }
+
+    #[test]
+    fn test_bits_to_unsigned_ints() {
+        assert_eq!(
+            bits_to_unsigned_ints(&[
+                false, false, false, false, true, false, true, false, true, false
+            ]),
+            vec![10, 2]
+        )
     }
 
     fn get_test_hash() -> (HashType, String) {
