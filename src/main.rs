@@ -10,6 +10,17 @@ use std::fs;
 
 use hash_based_signatures::signature::winternitz::domination_free_function::D;
 use std::path::PathBuf;
+use std::time::{Duration, Instant};
+
+fn timed<F, T>(f: F) -> (Duration, T)
+where
+    F: FnOnce() -> T,
+{
+    let start = Instant::now();
+    let result = f();
+    let elapsed_time = start.elapsed();
+    (elapsed_time, result)
+}
 
 #[derive(Parser, Debug)]
 struct Arguments {
@@ -48,7 +59,10 @@ fn keygen(width: usize, depth: usize, d: u64) {
     let mut rng = rand::thread_rng();
     rng.fill_bytes(&mut seed);
 
-    let signature_scheme = StatelessMerkleSignatureScheme::new(seed, width, depth, D::new(d));
+    let (time, signature_scheme) =
+        timed(move || StatelessMerkleSignatureScheme::new(seed, width, depth, D::new(d)));
+    println!("  (Key generation took: {:?})\n", time);
+
     let private_key = signature_scheme.private_key();
     let public_key = signature_scheme.public_key();
 
@@ -85,13 +99,15 @@ fn sign(path: PathBuf) {
         )
     }
 
+    let (time, signature) = timed(|| signature_scheme.sign(file_hash));
+    println!("  (Signing took: {:?})\n", time);
+
     println!("File Path:      {}", &path.to_str().unwrap());
     println!("Hash:           {}", hash_to_string(&file_hash));
     println!(
         "Public key:     {}",
         hash_to_string(&signature_scheme.public_key())
     );
-    let signature = signature_scheme.sign(file_hash);
 
     let output_path = format!("{}.signature", path.to_str().unwrap());
     println!("Signature path: {}", output_path);
@@ -119,7 +135,9 @@ fn verify(file_path: PathBuf, signature_path: PathBuf, public_key: HashType) -> 
     let signature_bytes = fs::read(&signature_path).expect("Error reading signature");
     let signature = rmp_serde::from_slice(&signature_bytes).expect("Error parsing signature");
 
-    let verifies = StatelessMerkleSignatureScheme::verify(public_key, file_hash, &signature);
+    let (time, verifies) =
+        timed(|| StatelessMerkleSignatureScheme::verify(public_key, file_hash, &signature));
+    println!("  (Verification took: {:?})\n", time);
 
     println!("File Path:      {}", &file_path.to_str().unwrap());
     println!("Signature Path: {}", &signature_path.to_str().unwrap());
