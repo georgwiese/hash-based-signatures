@@ -1,5 +1,6 @@
 use crate::merkle_tree::{MerkleProof, MerkleTree};
-use crate::signature::basic_lamport::{BasicLamportSignature, BasicLamportSignatureScheme};
+use crate::signature::winternitz::domination_free_function::D;
+use crate::signature::winternitz::{WinternitzKey, WinternitzSignature, WinternitzSignatureScheme};
 use crate::signature::{HashType, SignatureScheme};
 use rand::prelude::*;
 use rand_chacha::ChaCha20Rng;
@@ -8,7 +9,7 @@ use serde::{Deserialize, Serialize};
 /// The q-indexed signature scheme, as described in Section 14.6.1
 /// in the [textbook](http://toc.cryptobook.us/) by Boneh & Shoup.
 ///
-/// It instantiates `q` one-time signatures schemes (currently `BasicLamportSignatureScheme`)
+/// It instantiates `q` one-time signatures schemes (currently `WinternitzSignatureScheme`)
 /// and uses it to sign up to `q` messages.
 /// To shrink the public key to a single hash, a `MerkleTree` is used:
 /// The signatures contains the one-time public key that was used, along with a Merkle
@@ -19,8 +20,9 @@ use serde::{Deserialize, Serialize};
 /// ```
 /// use hash_based_signatures::signature::q_indexed_signature::QIndexedSignatureScheme;
 /// use hash_based_signatures::signature::SignatureScheme;
+/// use hash_based_signatures::signature::winternitz::domination_free_function::D;
 ///
-/// let mut signature_scheme = QIndexedSignatureScheme::new(2, [0; 32]);
+/// let mut signature_scheme = QIndexedSignatureScheme::new(2, [0; 32], D::new(255));
 /// let signature0 = signature_scheme.sign((0, [0u8; 32]));
 /// let signature1 = signature_scheme.sign((1, [1u8; 32]));
 ///
@@ -37,34 +39,34 @@ use serde::{Deserialize, Serialize};
 /// ```
 #[derive(Clone)]
 pub struct QIndexedSignatureScheme {
-    one_time_signatures: Vec<BasicLamportSignatureScheme>,
+    one_time_signatures: Vec<WinternitzSignatureScheme>,
     public_key_merkle_tree: MerkleTree,
 }
 
 #[derive(PartialEq, Serialize, Deserialize)]
 pub struct QIndexedSignature {
     pub proof: MerkleProof,
-    pub one_time_signature: BasicLamportSignature,
+    pub one_time_signature: WinternitzSignature,
 }
 
 impl QIndexedSignatureScheme {
-    /// Generates a new one-time key pair from the given `seed` and instantiates the scheme.
+    /// Builds a q-indexed signature scheme from the given `seed`.
     ///
     /// # Panics
     ///
     /// Panics if `q` is not a power of two.
-    pub fn new(q: usize, seed: [u8; 32]) -> Self {
+    pub fn new(q: usize, seed: [u8; 32], d: D) -> Self {
         let mut rng = ChaCha20Rng::from_seed(seed);
         let mut seed_for_sub_scheme: [u8; 32] = [0; 32];
         let mut one_time_signatures = Vec::new();
         for _ in 0..q {
             rng.fill_bytes(&mut seed_for_sub_scheme);
-            one_time_signatures.push(BasicLamportSignatureScheme::new(seed_for_sub_scheme));
+            one_time_signatures.push(WinternitzSignatureScheme::new(seed_for_sub_scheme, d));
         }
 
-        let public_keys_flat: Vec<Vec<u8>> = one_time_signatures
+        let public_keys_flat = one_time_signatures
             .iter()
-            .map(|s| Vec::from(s.public_key().concat().concat()))
+            .map(|s| Vec::from(s.public_key().concat()))
             .collect();
 
         let public_key_merkle_tree = MerkleTree::new(public_keys_flat);
@@ -109,35 +111,30 @@ impl SignatureScheme<HashType, (usize, HashType), QIndexedSignature> for QIndexe
             return false;
         }
 
-        // Parse Basic Lamport public key
+        // Parse Winternitz key by "reshaping" it from Vec<u8> to Vec<[u8; 32]>
         // TODO: I'm sure there is a better way...
-        let mut basic_lamport_key = [[[0u8; 32]; 2]; 256];
-        assert_eq!(signature.proof.data.len(), 32 * 2 * 256);
-        for i in 0..256 {
-            for j in 0..2 {
-                for k in 0..32 {
-                    let index = i * 32 * 2 + j * 32 + k;
-                    basic_lamport_key[i][j][k] = signature.proof.data[index];
-                }
+        let mut winternitz_key: WinternitzKey = Vec::new();
+        for i in 0..(signature.proof.data.len() / 32) {
+            let mut data = [0u8; 32];
+            for j in 0..32 {
+                data[j] = signature.proof.data[i * 32 + j];
             }
+            winternitz_key.push(data);
         }
 
-        BasicLamportSignatureScheme::verify(
-            basic_lamport_key,
-            message,
-            &signature.one_time_signature,
-        )
+        WinternitzSignatureScheme::verify(winternitz_key, message, &signature.one_time_signature)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::signature::q_indexed_signature::QIndexedSignatureScheme;
+    use crate::signature::winternitz::domination_free_function::D;
     use crate::signature::SignatureScheme;
 
     fn get_signature_scheme() -> QIndexedSignatureScheme {
         let seed = [0u8; 32];
-        QIndexedSignatureScheme::new(4, seed)
+        QIndexedSignatureScheme::new(4, seed, D::new(255))
     }
 
     #[test]
@@ -180,13 +177,5 @@ mod tests {
         let mut signature_scheme = get_signature_scheme();
         signature_scheme.sign((0, [0u8; 32]));
         signature_scheme.sign((0, [0u8; 32]));
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_cant_sign_different_messages() {
-        let mut signature_scheme = get_signature_scheme();
-        signature_scheme.sign((0, [0u8; 32]));
-        signature_scheme.sign((0, [1u8; 32]));
     }
 }

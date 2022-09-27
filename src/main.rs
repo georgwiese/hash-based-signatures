@@ -8,7 +8,19 @@ use rand::RngCore;
 use rmp_serde;
 use std::fs;
 
+use hash_based_signatures::signature::winternitz::domination_free_function::D;
 use std::path::PathBuf;
+use std::time::{Duration, Instant};
+
+fn timed<F, T>(f: F) -> (Duration, T)
+where
+    F: FnOnce() -> T,
+{
+    let start = Instant::now();
+    let result = f();
+    let elapsed_time = start.elapsed();
+    (elapsed_time, result)
+}
 
 #[derive(Parser, Debug)]
 struct Arguments {
@@ -23,6 +35,8 @@ enum Commands {
         width: usize,
         #[clap(default_value_t = 32)]
         depth: usize,
+        #[clap(default_value_t = 255)]
+        d: u64,
     },
     Sign {
         path: PathBuf,
@@ -34,7 +48,7 @@ enum Commands {
     },
 }
 
-fn keygen(width: usize, depth: usize) {
+fn keygen(width: usize, depth: usize, d: u64) {
     println!();
     println!(" #######################");
     println!("   Generating key");
@@ -45,7 +59,10 @@ fn keygen(width: usize, depth: usize) {
     let mut rng = rand::thread_rng();
     rng.fill_bytes(&mut seed);
 
-    let signature_scheme = StatelessMerkleSignatureScheme::new(seed, width, depth);
+    let (time, signature_scheme) =
+        timed(move || StatelessMerkleSignatureScheme::new(seed, width, depth, D::new(d)));
+    println!("  (Key generation took: {:?})\n", time);
+
     let private_key = signature_scheme.private_key();
     let public_key = signature_scheme.public_key();
 
@@ -73,19 +90,30 @@ fn sign(path: PathBuf) {
     let file_hash = Hash::hash(&data);
     let mut signature_scheme = StatelessMerkleSignatureScheme::from_private_key(&private_key);
 
+    if string_to_hash(&private_key.public_key) != signature_scheme.public_key() {
+        panic!(
+            "The public key referenced in .private_key.json cannot be derived from the private key. \
+                This is probably because of an incompatible implementation change. \
+                Re-run key generation or manually change the public key to {}",
+            hash_to_string(&signature_scheme.public_key())
+        )
+    }
+
+    let (time, signature) = timed(|| signature_scheme.sign(file_hash));
+    println!("  (Signing took: {:?})\n", time);
+
     println!("File Path:      {}", &path.to_str().unwrap());
     println!("Hash:           {}", hash_to_string(&file_hash));
     println!(
         "Public key:     {}",
         hash_to_string(&signature_scheme.public_key())
     );
-    let signature = signature_scheme.sign(file_hash);
 
     let output_path = format!("{}.signature", path.to_str().unwrap());
     println!("Signature path: {}", output_path);
 
     let signature_bytes = rmp_serde::to_vec(&signature).expect("Error serializing signature");
-    fs::write(output_path, &signature_bytes).expect("Could not write signature");
+    fs::write(&output_path, &signature_bytes).expect("Could not write signature");
 }
 
 fn verify(file_path: PathBuf, signature_path: PathBuf, public_key: HashType) -> bool {
@@ -101,7 +129,9 @@ fn verify(file_path: PathBuf, signature_path: PathBuf, public_key: HashType) -> 
     let signature_bytes = fs::read(&signature_path).expect("Error reading signature");
     let signature = rmp_serde::from_slice(&signature_bytes).expect("Error parsing signature");
 
-    let verifies = StatelessMerkleSignatureScheme::verify(public_key, file_hash, &signature);
+    let (time, verifies) =
+        timed(|| StatelessMerkleSignatureScheme::verify(public_key, file_hash, &signature));
+    println!("  (Verification took: {:?})\n", time);
 
     println!("File Path:      {}", &file_path.to_str().unwrap());
     println!("Signature Path: {}", &signature_path.to_str().unwrap());
@@ -114,7 +144,7 @@ fn main() {
     let args: Arguments = Arguments::parse();
 
     match args.command {
-        Commands::KeyGen { width, depth } => keygen(width, depth),
+        Commands::KeyGen { width, depth, d } => keygen(width, depth, d),
         Commands::Sign { path } => sign(path),
         Commands::Verify {
             file_path,
@@ -138,7 +168,7 @@ mod tests {
             PathBuf::from("example/readme.md"),
             PathBuf::from("example/readme.md.signature"),
             string_to_hash(&String::from(
-                "97d45a522cb1f497ef2c55942b402b6dfedd1efd75cbe2d0cd19b4067cf01c95",
+                "d4c280791e7712789c21babb323c8b9ab5631f36bcef75c8ec4a2466d69057fe",
             )),
         );
         assert!(verifies)
