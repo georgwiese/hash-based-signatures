@@ -24,9 +24,7 @@ pub fn string_to_hash(hash_string: &String) -> HashType {
 
 /// Gets the `bits` least significant bits of `index`,
 /// sorted from most significant to least significant.
-pub fn get_least_significant_bits(index: usize, bits: usize) -> Vec<bool>
-where
-{
+pub fn get_least_significant_bits(index: usize, bits: usize) -> Vec<bool> {
     let mut result = Vec::new();
     for i in (0..bits).rev() {
         result.push((index & (1 << i)) != 0)

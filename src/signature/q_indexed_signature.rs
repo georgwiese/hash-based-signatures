@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 /// The q-indexed signature scheme, as described in Section 14.6.1
 /// in the [textbook](http://toc.cryptobook.us/) by Boneh & Shoup.
 ///
-/// It instantiates `q` one-time signatures schemes (currently `BasicLamportSignatureScheme`)
+/// It instantiates `q` one-time signatures schemes (currently `WinternitzSignatureScheme`)
 /// and uses it to sign up to `q` messages.
 /// To shrink the public key to a single hash, a `MerkleTree` is used:
 /// The signatures contains the one-time public key that was used, along with a Merkle
@@ -50,7 +50,7 @@ pub struct QIndexedSignature {
 }
 
 impl QIndexedSignatureScheme {
-    /// Generates a new one-time key pair from the given `seed` and instantiates the scheme.
+    /// Builds a q-indexed signature scheme from the given `seed`.
     ///
     /// # Panics
     ///
@@ -111,7 +111,7 @@ impl SignatureScheme<HashType, (usize, HashType), QIndexedSignature> for QIndexe
             return false;
         }
 
-        // Parse Basic Lamport public key
+        // Parse Winternitz key by "reshaping" it from Vec<u8> to Vec<[u8; 32]>
         // TODO: I'm sure there is a better way...
         let mut winternitz_key: WinternitzKey = Vec::new();
         for i in 0..(signature.proof.data.len() / 32) {

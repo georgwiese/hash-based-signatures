@@ -10,6 +10,29 @@ use rand_chacha::ChaCha20Rng;
 pub type WinternitzKey = Vec<[u8; 32]>;
 pub type WinternitzSignature = (u64, Vec<[u8; 32]>);
 
+/// Winternitz signatures, as described in Section 14.3
+/// in the [textbook](http://toc.cryptobook.us/) by Boneh & Shoup.
+///
+/// To create a one-time signature, the scheme hashes secret key values
+/// a number of times, as determined by the `domination_free_function`.
+/// The parameter `d` trades off signature size (the higher, the smaller the signature)
+/// and computation time (the higher, the longer the time).
+///
+/// # Examples
+///
+/// ```
+/// use hash_based_signatures::signature::SignatureScheme;
+/// use hash_based_signatures::signature::winternitz::domination_free_function::D;
+/// use hash_based_signatures::signature::winternitz::WinternitzSignatureScheme;
+///
+/// let mut signature_scheme = WinternitzSignatureScheme::new([0u8; 32], D::new(15));
+/// let signature0 = signature_scheme.sign([0u8; 32]);
+/// assert!(WinternitzSignatureScheme::verify(
+///     signature_scheme.public_key(),
+///     [0u8; 32],
+///     &signature0
+/// ));
+/// ```
 #[derive(Clone)]
 pub struct WinternitzSignatureScheme {
     sk: WinternitzKey,
@@ -17,6 +40,9 @@ pub struct WinternitzSignatureScheme {
     d: D,
 }
 
+/// Computes the hash chain of a given (intermediate) input.
+/// To do so, hash `i` is computed as `Sha256(i, <input>)`, with `i` going from
+/// `start` (inclusive) to `end` (exclusive).
 fn hash_chain(input: HashType, start: usize, end: usize) -> HashType {
     let mut current_hash_value = input;
     let mut counter_buffer = [0u8; 32];
@@ -38,6 +64,7 @@ fn hash_chain(input: HashType, start: usize, end: usize) -> HashType {
 }
 
 impl WinternitzSignatureScheme {
+    /// Builds a Winternitz signature scheme from the given `seed`.
     pub fn new(seed: [u8; 32], d: D) -> Self {
         let mut rng = ChaCha20Rng::from_seed(seed);
 
