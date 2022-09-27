@@ -20,8 +20,9 @@ use serde::{Deserialize, Serialize};
 /// ```
 /// use hash_based_signatures::signature::q_indexed_signature::QIndexedSignatureScheme;
 /// use hash_based_signatures::signature::SignatureScheme;
+/// use hash_based_signatures::signature::winternitz::domination_free_function::D;
 ///
-/// let mut signature_scheme = QIndexedSignatureScheme::new(2, [0; 32]);
+/// let mut signature_scheme = QIndexedSignatureScheme::new(2, [0; 32], D::new(255));
 /// let signature0 = signature_scheme.sign((0, [0u8; 32]));
 /// let signature1 = signature_scheme.sign((1, [1u8; 32]));
 ///
@@ -54,16 +55,13 @@ impl QIndexedSignatureScheme {
     /// # Panics
     ///
     /// Panics if `q` is not a power of two.
-    pub fn new(q: usize, seed: [u8; 32]) -> Self {
+    pub fn new(q: usize, seed: [u8; 32], d: D) -> Self {
         let mut rng = ChaCha20Rng::from_seed(seed);
         let mut seed_for_sub_scheme: [u8; 32] = [0; 32];
         let mut one_time_signatures = Vec::new();
         for _ in 0..q {
             rng.fill_bytes(&mut seed_for_sub_scheme);
-            one_time_signatures.push(WinternitzSignatureScheme::new(
-                seed_for_sub_scheme,
-                D::new(255),
-            ));
+            one_time_signatures.push(WinternitzSignatureScheme::new(seed_for_sub_scheme, d));
         }
 
         let public_keys_flat = one_time_signatures
@@ -131,11 +129,12 @@ impl SignatureScheme<HashType, (usize, HashType), QIndexedSignature> for QIndexe
 #[cfg(test)]
 mod tests {
     use crate::signature::q_indexed_signature::QIndexedSignatureScheme;
+    use crate::signature::winternitz::domination_free_function::D;
     use crate::signature::SignatureScheme;
 
     fn get_signature_scheme() -> QIndexedSignatureScheme {
         let seed = [0u8; 32];
-        QIndexedSignatureScheme::new(4, seed)
+        QIndexedSignatureScheme::new(4, seed, D::new(255))
     }
 
     #[test]

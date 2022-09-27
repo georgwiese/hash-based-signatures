@@ -1,4 +1,5 @@
 use crate::signature::q_indexed_signature::{QIndexedSignature, QIndexedSignatureScheme};
+use crate::signature::winternitz::domination_free_function::D;
 use crate::signature::{HashType, SignatureScheme};
 use crate::utils::{hash_to_string, string_to_hash};
 use hmac_sha256::{Hash, HMAC};
@@ -13,6 +14,7 @@ pub struct StatelessMerklePrivateKey {
     pub seed_hex: String,
     pub width: usize,
     pub depth: usize,
+    pub d: u64,
     // This can be derived from the seed, but might be useful for someone who inspects the JSON
     pub public_key: String,
 }
@@ -31,8 +33,9 @@ pub struct StatelessMerklePrivateKey {
 /// ```
 /// use hash_based_signatures::signature::stateless_merkle::StatelessMerkleSignatureScheme;
 /// use hash_based_signatures::signature::SignatureScheme;
+/// use hash_based_signatures::signature::winternitz::domination_free_function::D;
 ///
-/// let mut signature_scheme = StatelessMerkleSignatureScheme::new([0; 32], 16, 5);
+/// let mut signature_scheme = StatelessMerkleSignatureScheme::new([0; 32], 16, 5, D::new(255));
 /// let signature0 = signature_scheme.sign([0u8; 32]);
 /// let signature1 = signature_scheme.sign([1u8; 32]);
 ///
@@ -59,6 +62,7 @@ pub struct StatelessMerkleSignatureScheme {
     root_signature: QIndexedSignatureScheme,
     q: usize,
     depth: usize,
+    d: D,
 }
 
 #[derive(PartialEq, Serialize, Deserialize)]
@@ -95,22 +99,28 @@ impl StatelessMerkleSignatureScheme {
     /// # Panics
     ///
     /// Panics if `q` is not a power of two.
-    pub fn new(seed: HashType, q: usize, depth: usize) -> Self {
+    pub fn new(seed: HashType, q: usize, depth: usize, d: D) -> Self {
         let root_seed = HMAC::mac(&[0], &seed);
         let seed_prf_key = HMAC::mac(&[1], &seed);
         let path_prf_key = HMAC::mac(&[1], &seed);
         Self {
             seed,
-            root_signature: QIndexedSignatureScheme::new(q, root_seed),
+            root_signature: QIndexedSignatureScheme::new(q, root_seed, d),
             seed_prf_key,
             path_prf_key,
             q,
             depth,
+            d,
         }
     }
 
     pub fn from_private_key(key: &StatelessMerklePrivateKey) -> Self {
-        Self::new(string_to_hash(&key.seed_hex), key.width, key.depth)
+        Self::new(
+            string_to_hash(&key.seed_hex),
+            key.width,
+            key.depth,
+            D::new(key.d),
+        )
     }
 
     pub fn private_key(&self) -> StatelessMerklePrivateKey {
@@ -119,6 +129,7 @@ impl StatelessMerkleSignatureScheme {
             public_key: hash_to_string(&self.public_key()),
             width: self.q,
             depth: self.depth,
+            d: self.d.d,
         }
     }
 
@@ -128,7 +139,7 @@ impl StatelessMerkleSignatureScheme {
         } else {
             let path_bytes: Vec<u8> = path.iter().map(|x| x.to_be_bytes()).flatten().collect();
             let seed = HMAC::mac(path_bytes, self.seed_prf_key);
-            QIndexedSignatureScheme::new(self.q, seed)
+            QIndexedSignatureScheme::new(self.q, seed, self.d)
         }
     }
 }
@@ -202,11 +213,12 @@ impl SignatureScheme<HashType, HashType, StatelessMerkleSignature>
 #[cfg(test)]
 mod tests {
     use crate::signature::stateless_merkle::StatelessMerkleSignatureScheme;
+    use crate::signature::winternitz::domination_free_function::D;
     use crate::signature::SignatureScheme;
 
     fn get_signature_scheme() -> StatelessMerkleSignatureScheme {
         let seed = [0u8; 32];
-        StatelessMerkleSignatureScheme::new(seed, 16, 5)
+        StatelessMerkleSignatureScheme::new(seed, 16, 5, D::new(255))
     }
 
     #[test]

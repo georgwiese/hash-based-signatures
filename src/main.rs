@@ -8,6 +8,7 @@ use rand::RngCore;
 use rmp_serde;
 use std::fs;
 
+use hash_based_signatures::signature::winternitz::domination_free_function::D;
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
@@ -23,6 +24,8 @@ enum Commands {
         width: usize,
         #[clap(default_value_t = 32)]
         depth: usize,
+        #[clap(default_value_t = 255)]
+        d: u64,
     },
     Sign {
         path: PathBuf,
@@ -34,7 +37,7 @@ enum Commands {
     },
 }
 
-fn keygen(width: usize, depth: usize) {
+fn keygen(width: usize, depth: usize, d: u64) {
     println!();
     println!(" #######################");
     println!("   Generating key");
@@ -45,7 +48,7 @@ fn keygen(width: usize, depth: usize) {
     let mut rng = rand::thread_rng();
     rng.fill_bytes(&mut seed);
 
-    let signature_scheme = StatelessMerkleSignatureScheme::new(seed, width, depth);
+    let signature_scheme = StatelessMerkleSignatureScheme::new(seed, width, depth, D::new(d));
     let private_key = signature_scheme.private_key();
     let public_key = signature_scheme.public_key();
 
@@ -129,7 +132,7 @@ fn main() {
     let args: Arguments = Arguments::parse();
 
     match args.command {
-        Commands::KeyGen { width, depth } => keygen(width, depth),
+        Commands::KeyGen { width, depth, d } => keygen(width, depth, d),
         Commands::Sign { path } => sign(path),
         Commands::Verify {
             file_path,
