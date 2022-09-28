@@ -22,28 +22,50 @@ where
     (elapsed_time, result)
 }
 
-#[derive(Parser, Debug)]
+#[derive(Parser)]
+#[clap(name = "Hash-based signatures")]
+#[clap(version)]
+#[clap(author)]
+#[clap(about)]
 struct Arguments {
     #[clap(subcommand)]
     command: Commands,
 }
 
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand)]
 enum Commands {
+    /// Generate a new public / private key pair
     KeyGen {
-        #[clap(default_value_t = 16)]
+        /// The width of the tree used in Merkle signatures.
+        /// This needs to be a power of 2.
+        /// The signing time correlates (roughly) linearly with the the width.
+        /// The total amount of supported signatures is roughly `sqrt(width^depth)`
+        #[clap(default_value_t = 16, long)]
         width: usize,
-        #[clap(default_value_t = 32)]
+        /// The depth of the tree used in Merkle signatures.
+        /// Both the signing time and signature size correlate linearly with the depth.
+        /// The total amount of supported signatures is roughly `sqrt(width^depth)`
+        #[clap(default_value_t = 16, long)]
         depth: usize,
-        #[clap(default_value_t = 255)]
+        /// The parameter `d` used for Winternitz signatures.
+        /// Needs to be of the form `2^(2^x) - 1`, so possible values are: 1, 3, 15, and 255.
+        /// Signing time is proportional to `d`, while the signature size is inversely proportional
+        /// to `log(d)`.
+        #[clap(default_value_t = 15, long)]
         d: u64,
     },
+    /// Sign a message
     Sign {
+        /// Path of the file to sign. The signature will be placed next to the file.
         path: PathBuf,
     },
+    /// Verify a signature
     Verify {
+        /// Path of the file to verify
         file_path: PathBuf,
+        /// Path of the signature
         signature_path: PathBuf,
+        /// Public key (should be a hex-encoded 256-bit hash)
         public_key: String,
     },
 }
@@ -73,6 +95,12 @@ fn keygen(width: usize, depth: usize, d: u64) {
 
     println!("Public key:       {}", hash_to_string(&public_key));
     println!("Private key path: {}", output_path);
+
+    println!(
+        "\n\nRemember that you should generate a new key pair well before having \
+    signed sqrt(width^depth) messages, which in your case is about {:0.2e}.",
+        (width as f32).powf(depth as f32 / 2.0)
+    )
 }
 
 fn sign(path: PathBuf) {
@@ -168,7 +196,7 @@ mod tests {
             PathBuf::from("example/readme.md"),
             PathBuf::from("example/readme.md.signature"),
             string_to_hash(&String::from(
-                "d4c280791e7712789c21babb323c8b9ab5631f36bcef75c8ec4a2466d69057fe",
+                "2295347ca777bb31b353b180b46ef09907712445ded61ea4a050c9889b6c142f",
             )),
         );
         assert!(verifies)
