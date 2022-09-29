@@ -26,7 +26,7 @@ enum Commands {
         /// The depth of the tree used in Merkle signatures.
         /// Both the signing time and signature size correlate linearly with the depth.
         /// The total amount of supported signatures is roughly `sqrt(width^depth)`
-        #[clap(default_value_t = 16, long)]
+        #[clap(default_value_t = 32, long)]
         depth: usize,
         /// The parameter `d` used for Winternitz signatures.
         /// Needs to be of the form `2^(2^x) - 1`, so possible values are: 1, 3, 15, and 255.

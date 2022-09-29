@@ -8,7 +8,7 @@ fn example_verifies() {
         PathBuf::from("example/readme.md"),
         PathBuf::from("example/readme.md.signature"),
         string_to_hash(&String::from(
-            "2295347ca777bb31b353b180b46ef09907712445ded61ea4a050c9889b6c142f",
+            "702d39ca33cab5590ada460e4bc0d6821468cfd40ea593140c0e3002fd3c0412",
         )),
     );
     assert!(verifies)

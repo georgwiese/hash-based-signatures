@@ -3,7 +3,7 @@
 This very readme will be signed by the following public key:
 
 ```
-2295347ca777bb31b353b180b46ef09907712445ded61ea4a050c9889b6c142f
+702d39ca33cab5590ada460e4bc0d6821468cfd40ea593140c0e3002fd3c0412
 ```
 
 You can verify the signature by running:
@@ -11,5 +11,5 @@ You can verify the signature by running:
 $ cargo run -- verify \
   example/readme.md \
   example/readme.md.signature \
-  2295347ca777bb31b353b180b46ef09907712445ded61ea4a050c9889b6c142f
+  702d39ca33cab5590ada460e4bc0d6821468cfd40ea593140c0e3002fd3c0412
 ```

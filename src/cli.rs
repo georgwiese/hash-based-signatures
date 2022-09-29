@@ -58,6 +58,7 @@ pub fn sign(path: PathBuf) {
     println!(" #######################");
     println!();
 
+    // TODO: Don't read into memory all at once
     let data = fs::read(&path).expect("Unable to read file");
     let private_key_json =
         fs::read_to_string(".private_key.json").expect("Error reading private key");
