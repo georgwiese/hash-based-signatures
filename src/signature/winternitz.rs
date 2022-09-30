@@ -7,6 +7,7 @@ use hmac_sha256::Hash;
 use itertools::izip;
 use rand::prelude::*;
 use rand_chacha::ChaCha20Rng;
+use rayon::prelude::*;
 use std::iter;
 
 pub type WinternitzKey = Vec<[u8; 32]>;
@@ -68,8 +69,11 @@ fn hash_chain_parallel(
     starts: impl Iterator<Item = u8>,
     ends: impl Iterator<Item = u8>,
 ) -> Vec<HashType> {
-    izip!(inputs.iter(), starts, ends)
-        .map(|(input, start, end)| hash_chain(*input, start, end))
+    inputs
+        .par_iter()
+        .zip(starts.take(inputs.len()).collect::<Vec<u8>>().par_iter())
+        .zip(ends.take(inputs.len()).collect::<Vec<u8>>().par_iter())
+        .map(|((input, start), end)| hash_chain(*input, *start, *end))
         .collect()
 }
 
