@@ -4,8 +4,10 @@ use crate::signature::winternitz::domination_free_function::{domination_free_fun
 use crate::signature::{HashType, SignatureScheme};
 use crate::utils::{bits_to_unsigned_ints, get_least_significant_bits};
 use hmac_sha256::Hash;
+use itertools::izip;
 use rand::prelude::*;
 use rand_chacha::ChaCha20Rng;
+use std::iter;
 
 pub type WinternitzKey = Vec<[u8; 32]>;
 pub type WinternitzSignature = (u64, Vec<[u8; 32]>);
@@ -43,15 +45,13 @@ pub struct WinternitzSignatureScheme {
 /// Computes the hash chain of a given (intermediate) input.
 /// To do so, hash `i` is computed as `Sha256(i, <input>)`, with `i` going from
 /// `start` (inclusive) to `end` (exclusive).
-fn hash_chain(input: HashType, start: usize, end: usize) -> HashType {
+fn hash_chain(input: HashType, start: u8, end: u8) -> HashType {
     let mut current_hash_value = input;
     let mut counter_buffer = [0u8; 32];
 
-    assert!(end < (1 << 32));
-
     for i in start..end {
         // Encode i as a 32-bit value into the buffer
-        let index_bitstring = get_least_significant_bits(i, 32);
+        let index_bitstring = get_least_significant_bits(i as usize, 32);
         let index_bytes = bits_to_unsigned_ints(&index_bitstring);
         assert_eq!(index_bytes.len(), 4);
         for i in 0..4 {
@@ -63,6 +63,16 @@ fn hash_chain(input: HashType, start: usize, end: usize) -> HashType {
     current_hash_value
 }
 
+fn hash_chain_parallel(
+    inputs: &Vec<HashType>,
+    starts: impl Iterator<Item = u8>,
+    ends: impl Iterator<Item = u8>,
+) -> Vec<HashType> {
+    izip!(inputs.iter(), starts, ends)
+        .map(|(input, start, end)| hash_chain(*input, start, end))
+        .collect()
+}
+
 impl WinternitzSignatureScheme {
     /// Builds a Winternitz signature scheme from the given `seed`.
     pub fn new(seed: [u8; 32], d: D) -> Self {
@@ -70,15 +80,13 @@ impl WinternitzSignatureScheme {
 
         let mut buffer = [0u8; 32];
         let mut sk = Vec::with_capacity(d.signature_and_key_size());
-        let mut pk = Vec::with_capacity(d.signature_and_key_size());
 
         // create secrets
         for _ in 0..d.signature_and_key_size() {
             rng.fill_bytes(&mut buffer);
             sk.push(buffer);
-
-            pk.push(hash_chain(buffer, 0, d.d as usize));
         }
+        let pk = hash_chain_parallel(&sk, iter::repeat(0), iter::repeat(d.d as u8));
 
         Self { sk, pk, d }
     }
@@ -90,14 +98,10 @@ impl SignatureScheme<WinternitzKey, HashType, WinternitzSignature> for Winternit
     }
 
     fn sign(&mut self, message: HashType) -> WinternitzSignature {
-        let mut signature = Vec::with_capacity(self.sk.len());
         let times_to_hash = domination_free_function(message, &self.d);
-
         assert_eq!(times_to_hash.len(), self.sk.len());
 
-        for (sk_value, n) in self.sk.iter().zip(times_to_hash) {
-            signature.push(hash_chain(*sk_value, 0, n as usize))
-        }
+        let signature = hash_chain_parallel(&self.sk, iter::repeat(0), times_to_hash.into_iter());
 
         (self.d.d, signature)
     }
@@ -105,19 +109,17 @@ impl SignatureScheme<WinternitzKey, HashType, WinternitzSignature> for Winternit
     fn verify(pk: WinternitzKey, message: HashType, signature: &WinternitzSignature) -> bool {
         let (d, signature) = signature;
         let times_to_hash = domination_free_function(message, &D::new(*d));
-        let mut expected_pk = Vec::with_capacity(pk.len());
 
         if times_to_hash.len() != signature.len() {
             return false;
         }
 
-        for (signature_value, times_hashed) in signature.iter().zip(times_to_hash) {
-            expected_pk.push(hash_chain(
-                *signature_value,
-                times_hashed as usize,
-                *d as usize,
-            ))
-        }
+        let expected_pk = hash_chain_parallel(
+            &signature,
+            times_to_hash.into_iter(),
+            iter::repeat(*d as u8),
+        );
+
         expected_pk == pk
     }
 }
