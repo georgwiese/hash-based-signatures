@@ -230,7 +230,6 @@ dependencies = [
  "clap",
  "criterion",
  "hmac-sha256",
- "itertools",
  "rand",
  "rand_chacha",
  "rayon",

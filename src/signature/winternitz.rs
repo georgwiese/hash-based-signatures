@@ -4,7 +4,6 @@ use crate::signature::winternitz::domination_free_function::{domination_free_fun
 use crate::signature::{HashType, SignatureScheme};
 use crate::utils::{bits_to_unsigned_ints, get_least_significant_bits};
 use hmac_sha256::Hash;
-use itertools::izip;
 use rand::prelude::*;
 use rand_chacha::ChaCha20Rng;
 use rayon::prelude::*;
@@ -69,10 +68,14 @@ fn hash_chain_parallel(
     starts: impl Iterator<Item = u8>,
     ends: impl Iterator<Item = u8>,
 ) -> Vec<HashType> {
+    // Materialize starts and ends, to allow for parallelization
+    let starts: Vec<u8> = starts.take(inputs.len()).collect();
+    let ends: Vec<u8> = ends.take(inputs.len()).collect();
+
     inputs
         .par_iter()
-        .zip(starts.take(inputs.len()).collect::<Vec<u8>>().par_iter())
-        .zip(ends.take(inputs.len()).collect::<Vec<u8>>().par_iter())
+        .zip(starts.par_iter())
+        .zip(ends.par_iter())
         .map(|((input, start), end)| hash_chain(*input, *start, *end))
         .collect()
 }
