@@ -1,4 +1,5 @@
-use crate::utils::{get_least_significant_bits, hash_to_string};
+use crate::utils::get_least_significant_bits;
+use data_encoding::HEXLOWER;
 use hmac_sha256::Hash;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Formatter};
@@ -130,7 +131,7 @@ impl MerkleTree {
     fn representation_string(&self, indent: usize) -> String {
         let mut result = String::new();
         let indent_str = "  ".repeat(indent).to_string();
-        result += &format!("{}{}\n", indent_str, hash_to_string(&self.root_hash));
+        result += &format!("{}{}\n", indent_str, HEXLOWER.encode(&self.root_hash));
 
         match &self.root_node {
             Node::Leaf(data) => {
@@ -176,7 +177,7 @@ impl Debug for MerkleProof {
             self.index
         );
         for hash in self.hash_chain.iter() {
-            representation += &format!("  {}\n", hash_to_string(hash));
+            representation += &format!("  {}\n", HEXLOWER.encode(hash));
         }
         write!(f, "{}", representation)
     }

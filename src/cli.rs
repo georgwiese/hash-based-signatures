@@ -2,7 +2,7 @@ use crate::io::hash_file;
 use crate::signature::stateless_merkle::StatelessMerkleSignatureScheme;
 use crate::signature::winternitz::domination_free_function::D;
 use crate::signature::{HashType, SignatureScheme};
-use crate::utils::{hash_to_string, slice_to_hash, string_to_hash};
+use crate::utils::{slice_to_hash, string_to_hash};
 use data_encoding::HEXLOWER;
 use rand::RngCore;
 use std::fs;
@@ -42,7 +42,7 @@ pub fn keygen(width: usize, depth: usize, d: u64) {
     let output_path = ".private_key.json";
     fs::write(output_path, private_key_json).expect("Could not write private key");
 
-    println!("Public key:       {}", hash_to_string(&public_key));
+    println!("Public key:       {}", HEXLOWER.encode(&public_key));
     println!("Private key path: {}", output_path);
 
     println!(
@@ -71,7 +71,7 @@ pub fn sign(path: PathBuf) {
             "The public key referenced in .private_key.json cannot be derived from the private key. \
                 This is probably because of an incompatible implementation change. \
                 Re-run key generation or manually change the public key to {}",
-            hash_to_string(&signature_scheme.public_key())
+            HEXLOWER.encode(&signature_scheme.public_key())
         )
     }
 
@@ -82,7 +82,7 @@ pub fn sign(path: PathBuf) {
     println!("Hash:           {}", HEXLOWER.encode(file_hash.as_ref()));
     println!(
         "Public key:     {}",
-        hash_to_string(&signature_scheme.public_key())
+        HEXLOWER.encode(&signature_scheme.public_key())
     );
 
     let output_path = format!("{}.signature", path.to_str().unwrap());

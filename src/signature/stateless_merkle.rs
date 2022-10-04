@@ -1,7 +1,8 @@
 use crate::signature::q_indexed_signature::{QIndexedSignature, QIndexedSignatureScheme};
 use crate::signature::winternitz::domination_free_function::D;
 use crate::signature::{HashType, SignatureScheme};
-use crate::utils::{hash_to_string, string_to_hash};
+use crate::utils::string_to_hash;
+use data_encoding::HEXLOWER;
 use hmac_sha256::{Hash, HMAC};
 use rand::Rng;
 use rand_chacha::rand_core::SeedableRng;
@@ -78,7 +79,7 @@ impl Debug for StatelessMerkleSignature {
             result += &format!(
                 "- ({}, {})\n",
                 signature.proof.index,
-                hash_to_string(&message)
+                HEXLOWER.encode(message)
             );
         }
         result += &format!(
@@ -125,8 +126,8 @@ impl StatelessMerkleSignatureScheme {
 
     pub fn private_key(&self) -> StatelessMerklePrivateKey {
         StatelessMerklePrivateKey {
-            seed_hex: hash_to_string(&self.seed),
-            public_key: hash_to_string(&self.public_key()),
+            seed_hex: HEXLOWER.encode(&self.seed),
+            public_key: HEXLOWER.encode(&self.public_key()),
             width: self.q,
             depth: self.depth,
             d: self.d.d,
