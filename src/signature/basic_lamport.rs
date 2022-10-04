@@ -1,10 +1,10 @@
-use hmac_sha256::Hash;
 use rand::prelude::*;
 use rand_chacha::ChaCha20Rng;
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 
 use crate::signature::{HashType, SignatureScheme};
+use crate::utils::hash;
 
 pub type BasicLamportKey = [[[u8; 32]; 2]; 256];
 
@@ -63,7 +63,7 @@ impl BasicLamportSignatureScheme {
         let mut pk = [[[0; 32]; 2]; 256];
         for bit_to_sign in 0..256 {
             for bit in 0..2 {
-                pk[bit_to_sign][bit] = Hash::hash(&sk[bit_to_sign][bit]);
+                pk[bit_to_sign][bit] = hash(&sk[bit_to_sign][bit]);
             }
         }
         Self {
@@ -119,7 +119,7 @@ impl SignatureScheme<BasicLamportKey, HashType, BasicLamportSignature>
             let byte = message[byte_index];
             for local_bit_index in 0..8 {
                 let bit_index = byte_index * 8 + local_bit_index;
-                let hash = Hash::hash(&signature.preimages[bit_index]);
+                let hash = hash(&signature.preimages[bit_index]);
                 let pk_index_to_expect = (byte & (1 << local_bit_index) != 0) as usize;
                 is_correct &= hash == pk[bit_index][pk_index_to_expect];
             }

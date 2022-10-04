@@ -2,8 +2,7 @@ pub mod domination_free_function;
 
 use crate::signature::winternitz::domination_free_function::{domination_free_function, D};
 use crate::signature::{HashType, SignatureScheme};
-use crate::utils::{bits_to_unsigned_ints, get_least_significant_bits};
-use hmac_sha256::Hash;
+use crate::utils::{bits_to_unsigned_ints, get_least_significant_bits, hash};
 use rand::prelude::*;
 use rand_chacha::ChaCha20Rng;
 use rayon::prelude::*;
@@ -58,7 +57,7 @@ fn hash_chain(input: HashType, start: u8, end: u8) -> HashType {
             counter_buffer[i] = index_bytes[i];
         }
 
-        current_hash_value = Hash::hash(&[counter_buffer, current_hash_value].concat());
+        current_hash_value = hash(&[counter_buffer, current_hash_value].concat());
     }
     current_hash_value
 }

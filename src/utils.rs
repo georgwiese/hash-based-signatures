@@ -1,25 +1,37 @@
 use crate::signature::HashType;
+use data_encoding::HEXLOWER;
+use ring::digest::{digest, SHA256};
+use ring::hmac::Key;
 use std::cmp::min;
 
-pub fn hash_to_string(hash: &HashType) -> String {
-    let mut result = format!("{:02x?}", hash[0]);
-    for i in 1..32 {
-        result.push_str(&format!("{:02x?}", hash[i]));
-    }
+/// Convert a `&[u8]` to a [u8; 32]
+///
+/// # Panics
+/// Panics if the input does not have length 32.
+pub fn slice_to_hash(input_slice: &[u8]) -> HashType {
+    assert_eq!(input_slice.len(), 32);
+    let mut result = [0u8; 32];
+    result.copy_from_slice(input_slice);
     result
 }
 
+/// Hashes arbitrary bytes using SHA256
+pub fn hash(data: &[u8]) -> HashType {
+    slice_to_hash(digest(&SHA256, data).as_ref())
+}
+
+/// Computes the HMAC-SHA256 using the given key and data
+pub fn hmac(key: &HashType, data: &[u8]) -> HashType {
+    let hmac_key = Key::new(ring::hmac::HMAC_SHA256, key);
+    slice_to_hash(ring::hmac::sign(&hmac_key, data).as_ref())
+}
+
 pub fn string_to_hash(hash_string: &String) -> HashType {
-    let mut hash = [0u8; 32];
-    if hash_string.len() != 64 {
-        panic!("String has wrong length");
-    } else {
-        for i in 0..32 {
-            hash[i] = u8::from_str_radix(&hash_string[2 * i..2 * i + 2], 16)
-                .expect("Error parsing string");
-        }
-        hash
-    }
+    slice_to_hash(
+        &HEXLOWER
+            .decode(hash_string.as_bytes())
+            .expect("Could not decode"),
+    )
 }
 
 /// Gets the `bits` least significant bits of `index`,
@@ -63,8 +75,7 @@ pub fn bits_to_unsigned_ints(bits: &[bool]) -> Vec<u8> {
 mod tests {
     use crate::signature::HashType;
     use crate::utils::{
-        bits_to_unsigned_int, bits_to_unsigned_ints, get_least_significant_bits, hash_to_string,
-        string_to_hash,
+        bits_to_unsigned_int, bits_to_unsigned_ints, get_least_significant_bits, string_to_hash,
     };
 
     #[test]
@@ -99,12 +110,6 @@ mod tests {
             hash,
             String::from("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"),
         )
-    }
-
-    #[test]
-    fn test_hash_to_string() {
-        let (test_hash, test_hash_string) = get_test_hash();
-        assert_eq!(hash_to_string(&test_hash), test_hash_string);
     }
 
     #[test]

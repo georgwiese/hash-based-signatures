@@ -1,8 +1,8 @@
 use crate::signature::q_indexed_signature::{QIndexedSignature, QIndexedSignatureScheme};
 use crate::signature::winternitz::domination_free_function::D;
 use crate::signature::{HashType, SignatureScheme};
-use crate::utils::{hash_to_string, string_to_hash};
-use hmac_sha256::{Hash, HMAC};
+use crate::utils::{hash, hmac, string_to_hash};
+use data_encoding::HEXLOWER;
 use rand::Rng;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha20Rng;
@@ -78,7 +78,7 @@ impl Debug for StatelessMerkleSignature {
             result += &format!(
                 "- ({}, {})\n",
                 signature.proof.index,
-                hash_to_string(&message)
+                HEXLOWER.encode(message)
             );
         }
         result += &format!(
@@ -100,9 +100,10 @@ impl StatelessMerkleSignatureScheme {
     ///
     /// Panics if `q` is not a power of two.
     pub fn new(seed: HashType, q: usize, depth: usize, d: D) -> Self {
-        let root_seed = HMAC::mac(&[0], &seed);
-        let seed_prf_key = HMAC::mac(&[1], &seed);
-        let path_prf_key = HMAC::mac(&[1], &seed);
+        // Derive keys by using HMAC as a PRF
+        let root_seed = hmac(&seed, &[0]);
+        let seed_prf_key = hmac(&seed, &[1]);
+        let path_prf_key = hmac(&seed, &[2]);
         Self {
             seed,
             root_signature: QIndexedSignatureScheme::new(q, root_seed, d),
@@ -125,8 +126,8 @@ impl StatelessMerkleSignatureScheme {
 
     pub fn private_key(&self) -> StatelessMerklePrivateKey {
         StatelessMerklePrivateKey {
-            seed_hex: hash_to_string(&self.seed),
-            public_key: hash_to_string(&self.public_key()),
+            seed_hex: HEXLOWER.encode(&self.seed),
+            public_key: HEXLOWER.encode(&self.public_key()),
             width: self.q,
             depth: self.depth,
             d: self.d.d,
@@ -138,7 +139,7 @@ impl StatelessMerkleSignatureScheme {
             self.root_signature.clone()
         } else {
             let path_bytes: Vec<u8> = path.iter().map(|x| x.to_be_bytes()).flatten().collect();
-            let seed = HMAC::mac(path_bytes, self.seed_prf_key);
+            let seed = hmac(&self.seed_prf_key, &path_bytes);
             QIndexedSignatureScheme::new(self.q, seed, self.d)
         }
     }
@@ -152,8 +153,8 @@ impl SignatureScheme<HashType, HashType, StatelessMerkleSignature>
     }
 
     fn sign(&mut self, message: HashType) -> StatelessMerkleSignature {
-        // Generate pseudo-random path, using HMAC(path_prf_key, message) as the seed
-        let mut rng = ChaCha20Rng::from_seed(HMAC::mac(&message, self.path_prf_key));
+        // Generate pseudo-random path, using hmac(path_prf_key, message) as the seed
+        let mut rng = ChaCha20Rng::from_seed(hmac(&self.path_prf_key, &message));
         let path: Vec<usize> = (0..self.depth).map(|_| rng.gen_range(0..self.q)).collect();
 
         let mut public_key_signatures = Vec::with_capacity(self.depth);
@@ -171,7 +172,7 @@ impl SignatureScheme<HashType, HashType, StatelessMerkleSignature>
         // Even though the message might be a hash already, hash it again to prevent extension attacks:
         // Otherwise an adversary could create his own q-indexed public key, trick the signer to
         // sign it and then extend the signature to sign arbitrary messages.
-        let hashed_message = Hash::hash(&message);
+        let hashed_message = hash(&message);
 
         // Leaf node, sign message
         let message_signature =
@@ -201,10 +202,7 @@ impl SignatureScheme<HashType, HashType, StatelessMerkleSignature>
         // Verify message signature
         QIndexedSignatureScheme::verify(
             current_public_key,
-            (
-                signature.message_signature.proof.index,
-                Hash::hash(&message),
-            ),
+            (signature.message_signature.proof.index, hash(&message)),
             &signature.message_signature,
         )
     }

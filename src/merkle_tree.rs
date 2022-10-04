@@ -1,5 +1,5 @@
-use crate::utils::{get_least_significant_bits, hash_to_string};
-use hmac_sha256::Hash;
+use crate::utils::{get_least_significant_bits, hash};
+use data_encoding::HEXLOWER;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Formatter};
 use std::str::from_utf8;
@@ -42,12 +42,12 @@ pub fn leaf_hash(data: &[u8]) -> [u8; 32] {
     // So, we append a zero to all leafes before hashing them
     let zero = [0u8];
     let all_elements = [data, &zero as &[u8]].concat();
-    Hash::hash(&all_elements)
+    hash(&all_elements)
 }
 
 pub fn internal_node_hash(left: &[u8; 32], right: &[u8; 32]) -> [u8; 32] {
     let all_elements = [*left, *right].concat();
-    Hash::hash(&all_elements)
+    hash(&all_elements)
 }
 
 impl MerkleTree {
@@ -130,7 +130,7 @@ impl MerkleTree {
     fn representation_string(&self, indent: usize) -> String {
         let mut result = String::new();
         let indent_str = "  ".repeat(indent).to_string();
-        result += &format!("{}{}\n", indent_str, hash_to_string(&self.root_hash));
+        result += &format!("{}{}\n", indent_str, HEXLOWER.encode(&self.root_hash));
 
         match &self.root_node {
             Node::Leaf(data) => {
@@ -176,7 +176,7 @@ impl Debug for MerkleProof {
             self.index
         );
         for hash in self.hash_chain.iter() {
-            representation += &format!("  {}\n", hash_to_string(hash));
+            representation += &format!("  {}\n", HEXLOWER.encode(hash));
         }
         write!(f, "{}", representation)
     }
