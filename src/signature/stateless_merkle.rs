@@ -100,6 +100,7 @@ impl StatelessMerkleSignatureScheme {
     ///
     /// Panics if `q` is not a power of two.
     pub fn new(seed: HashType, q: usize, depth: usize, d: D) -> Self {
+        // Derive keys by using HMAC as a PRF
         let root_seed = hmac(&seed, &[0]);
         let seed_prf_key = hmac(&seed, &[1]);
         let path_prf_key = hmac(&seed, &[2]);
