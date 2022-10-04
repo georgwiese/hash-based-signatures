@@ -1,6 +1,12 @@
 use crate::signature::HashType;
 use std::cmp::min;
 
+pub fn slice_to_hash(input_slice: &[u8]) -> HashType {
+    let mut result = [0u8; 32];
+    result.copy_from_slice(input_slice);
+    result
+}
+
 pub fn hash_to_string(hash: &HashType) -> String {
     let mut result = format!("{:02x?}", hash[0]);
     for i in 1..32 {

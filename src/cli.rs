@@ -1,8 +1,9 @@
+use crate::io::hash_file;
 use crate::signature::stateless_merkle::StatelessMerkleSignatureScheme;
 use crate::signature::winternitz::domination_free_function::D;
 use crate::signature::{HashType, SignatureScheme};
-use crate::utils::{hash_to_string, string_to_hash};
-use hmac_sha256::Hash;
+use crate::utils::{hash_to_string, slice_to_hash, string_to_hash};
+use data_encoding::HEXLOWER;
 use rand::RngCore;
 use std::fs;
 use std::path::PathBuf;
@@ -58,13 +59,11 @@ pub fn sign(path: PathBuf) {
     println!(" #######################");
     println!();
 
-    // TODO: Don't read into memory all at once
-    let data = fs::read(&path).expect("Unable to read file");
     let private_key_json =
         fs::read_to_string(".private_key.json").expect("Error reading private key");
     let private_key = serde_json::from_str(&private_key_json).expect("Error parsing private key");
 
-    let file_hash = Hash::hash(&data);
+    let file_hash = hash_file(&path);
     let mut signature_scheme = StatelessMerkleSignatureScheme::from_private_key(&private_key);
 
     if string_to_hash(&private_key.public_key) != signature_scheme.public_key() {
@@ -76,11 +75,11 @@ pub fn sign(path: PathBuf) {
         )
     }
 
-    let (time, signature) = timed(|| signature_scheme.sign(file_hash));
+    let (time, signature) = timed(|| signature_scheme.sign(slice_to_hash(file_hash.as_ref())));
     println!("  (Signing took: {:?})\n", time);
 
     println!("File Path:      {}", &path.to_str().unwrap());
-    println!("Hash:           {}", hash_to_string(&file_hash));
+    println!("Hash:           {}", HEXLOWER.encode(file_hash.as_ref()));
     println!(
         "Public key:     {}",
         hash_to_string(&signature_scheme.public_key())
@@ -100,14 +99,18 @@ pub fn verify(file_path: PathBuf, signature_path: PathBuf, public_key: HashType)
     println!(" #######################");
     println!();
 
-    let data = fs::read(&file_path).expect("Unable to read file");
-    let file_hash = Hash::hash(&data);
+    let file_hash = hash_file(&file_path);
 
     let signature_bytes = fs::read(&signature_path).expect("Error reading signature");
     let signature = rmp_serde::from_slice(&signature_bytes).expect("Error parsing signature");
 
-    let (time, verifies) =
-        timed(|| StatelessMerkleSignatureScheme::verify(public_key, file_hash, &signature));
+    let (time, verifies) = timed(|| {
+        StatelessMerkleSignatureScheme::verify(
+            public_key,
+            slice_to_hash(file_hash.as_ref()),
+            &signature,
+        )
+    });
     println!("  (Verification took: {:?})\n", time);
 
     println!("File Path:      {}", &file_path.to_str().unwrap());
