@@ -15,10 +15,12 @@ pub fn slice_to_hash(input_slice: &[u8]) -> HashType {
     result
 }
 
+/// Hashes arbitrary bytes using SHA256
 pub fn hash(data: &[u8]) -> HashType {
     slice_to_hash(digest(&SHA256, data).as_ref())
 }
 
+/// Computes the HMAC-SHA256 using the given key and data
 pub fn hmac(key: &HashType, data: &[u8]) -> HashType {
     let hmac_key = Key::new(ring::hmac::HMAC_SHA256, key);
     slice_to_hash(ring::hmac::sign(&hmac_key, data).as_ref())
