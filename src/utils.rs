@@ -1,5 +1,7 @@
 use crate::signature::HashType;
 use data_encoding::HEXLOWER;
+use ring::digest::{digest, SHA256};
+use ring::hmac::Key;
 use std::cmp::min;
 
 /// Convert a `&[u8]` to a [u8; 32]
@@ -11,6 +13,15 @@ pub fn slice_to_hash(input_slice: &[u8]) -> HashType {
     let mut result = [0u8; 32];
     result.copy_from_slice(input_slice);
     result
+}
+
+pub fn hash(data: &[u8]) -> HashType {
+    slice_to_hash(digest(&SHA256, data).as_ref())
+}
+
+pub fn hmac(key: &HashType, data: &[u8]) -> HashType {
+    let hmac_key = Key::new(ring::hmac::HMAC_SHA256, key);
+    slice_to_hash(ring::hmac::sign(&hmac_key, data).as_ref())
 }
 
 pub fn string_to_hash(hash_string: &String) -> HashType {

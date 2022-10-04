@@ -1,6 +1,5 @@
-use crate::utils::get_least_significant_bits;
+use crate::utils::{get_least_significant_bits, hash};
 use data_encoding::HEXLOWER;
-use hmac_sha256::Hash;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Formatter};
 use std::str::from_utf8;
@@ -43,12 +42,12 @@ pub fn leaf_hash(data: &[u8]) -> [u8; 32] {
     // So, we append a zero to all leafes before hashing them
     let zero = [0u8];
     let all_elements = [data, &zero as &[u8]].concat();
-    Hash::hash(&all_elements)
+    hash(&all_elements)
 }
 
 pub fn internal_node_hash(left: &[u8; 32], right: &[u8; 32]) -> [u8; 32] {
     let all_elements = [*left, *right].concat();
-    Hash::hash(&all_elements)
+    hash(&all_elements)
 }
 
 impl MerkleTree {

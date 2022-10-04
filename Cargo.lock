@@ -242,7 +242,6 @@ dependencies = [
  "clap",
  "criterion",
  "data-encoding",
- "hmac-sha256",
  "rand",
  "rand_chacha",
  "rayon",
@@ -273,12 +272,6 @@ checksum = "62b467343b94ba476dcb2500d242dadbb39557df889310ac77c5d99100aaac33"
 dependencies = [
  "libc",
 ]
-
-[[package]]
-name = "hmac-sha256"
-version = "1.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd29dbba58ee5314f3ec570066d78a3f4772bf45b322efcf2ce2a43af69a4d85"
 
 [[package]]
 name = "indexmap"

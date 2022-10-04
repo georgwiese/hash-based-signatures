@@ -15,7 +15,6 @@ rmp-serde = "1.1.0"
 serde_json = "1.0.85"
 
 # Cryptography
-hmac-sha256 = "1.1.4"
 ring = "0.16.20"
 rand = "0.8.5"
 rand_chacha = "0.3.1"
