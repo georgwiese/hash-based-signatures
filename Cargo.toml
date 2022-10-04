@@ -23,4 +23,5 @@ name = "bench"
 harness = false
 
 [dev-dependencies]
+# Used for benchmarking
 criterion = "0.4.0"
