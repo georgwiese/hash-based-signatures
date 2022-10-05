@@ -1,3 +1,4 @@
+use anyhow::Result;
 use clap::{Parser, Subcommand};
 use hash_based_signatures::cli::{keygen, sign, verify};
 use hash_based_signatures::utils::string_to_hash;
@@ -51,7 +52,7 @@ enum Commands {
     },
 }
 
-fn main() {
+fn main() -> Result<()> {
     let args: Arguments = Arguments::parse();
 
     match args.command {
@@ -62,7 +63,8 @@ fn main() {
             signature_path,
             public_key,
         } => {
-            verify(file_path, signature_path, string_to_hash(&public_key));
+            verify(file_path, signature_path, string_to_hash(&public_key))?;
+            Ok(())
         }
     }
 }

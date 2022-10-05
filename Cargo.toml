@@ -20,6 +20,7 @@ rand = "0.8.5"
 rand_chacha = "0.3.1"
 
 # Other
+anyhow = "1.0.65"
 data-encoding = "2.3.2"
 rayon = "1.5.3"
 clap = {version = "3.2.22", features = ["derive"]}
