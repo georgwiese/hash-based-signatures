@@ -31,6 +31,10 @@ pub fn keygen(width: usize, depth: usize, d: u64) -> Result<()> {
     let mut rng = rand::thread_rng();
     rng.fill_bytes(&mut seed);
 
+    if width & (width - 1) != 0 {
+        bail!("Width {width} is not a power of 2!")
+    }
+
     let d = D::try_from(d)?;
     let (time, signature_scheme) =
         timed(move || StatelessMerkleSignatureScheme::new(seed, width, depth, d));
