@@ -1,5 +1,5 @@
 use crate::merkle_tree::{MerkleProof, MerkleTree};
-use crate::signature::winternitz::domination_free_function::D;
+use crate::signature::winternitz::d::D;
 use crate::signature::winternitz::{WinternitzKey, WinternitzSignature, WinternitzSignatureScheme};
 use crate::signature::{HashType, SignatureScheme};
 use rand::prelude::*;
@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize};
 /// ```
 /// use hash_based_signatures::signature::q_indexed_signature::QIndexedSignatureScheme;
 /// use hash_based_signatures::signature::SignatureScheme;
-/// use hash_based_signatures::signature::winternitz::domination_free_function::D;
+/// use hash_based_signatures::signature::winternitz::d::D;
 ///
 /// let mut signature_scheme = QIndexedSignatureScheme::new(2, [0; 32], D::new(255));
 /// let signature0 = signature_scheme.sign((0, [0u8; 32]));
@@ -129,7 +129,7 @@ impl SignatureScheme<HashType, (usize, HashType), QIndexedSignature> for QIndexe
 #[cfg(test)]
 mod tests {
     use crate::signature::q_indexed_signature::QIndexedSignatureScheme;
-    use crate::signature::winternitz::domination_free_function::D;
+    use crate::signature::winternitz::d::D;
     use crate::signature::SignatureScheme;
 
     fn get_signature_scheme() -> QIndexedSignatureScheme {

@@ -1,6 +1,8 @@
+pub mod d;
 pub mod domination_free_function;
 
-use crate::signature::winternitz::domination_free_function::{domination_free_function, D};
+use crate::signature::winternitz::d::D;
+use crate::signature::winternitz::domination_free_function::domination_free_function;
 use crate::signature::{HashType, SignatureScheme};
 use crate::utils::{bits_to_unsigned_ints, get_least_significant_bits, hash};
 use rand::prelude::*;
@@ -23,7 +25,7 @@ pub type WinternitzSignature = (u64, Vec<[u8; 32]>);
 ///
 /// ```
 /// use hash_based_signatures::signature::SignatureScheme;
-/// use hash_based_signatures::signature::winternitz::domination_free_function::D;
+/// use hash_based_signatures::signature::winternitz::d::D;
 /// use hash_based_signatures::signature::winternitz::WinternitzSignatureScheme;
 ///
 /// let mut signature_scheme = WinternitzSignatureScheme::new([0u8; 32], D::new(15));
@@ -114,25 +116,29 @@ impl SignatureScheme<WinternitzKey, HashType, WinternitzSignature> for Winternit
 
     fn verify(pk: WinternitzKey, message: HashType, signature: &WinternitzSignature) -> bool {
         let (d, signature) = signature;
-        let times_to_hash = domination_free_function(message, &D::new(*d));
+        if let Ok(d) = D::try_from(*d) {
+            let times_to_hash = domination_free_function(message, &d);
 
-        if times_to_hash.len() != signature.len() {
-            return false;
+            if times_to_hash.len() != signature.len() {
+                return false;
+            }
+
+            let expected_pk = hash_chain_parallel(
+                &signature,
+                times_to_hash.into_iter(),
+                iter::repeat(d.d as u8),
+            );
+
+            expected_pk == pk
+        } else {
+            false
         }
-
-        let expected_pk = hash_chain_parallel(
-            &signature,
-            times_to_hash.into_iter(),
-            iter::repeat(*d as u8),
-        );
-
-        expected_pk == pk
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::signature::winternitz::domination_free_function::D;
+    use crate::signature::winternitz::d::D;
     use crate::signature::winternitz::WinternitzSignatureScheme;
     use crate::signature::SignatureScheme;
 

@@ -1,7 +1,8 @@
 use crate::signature::q_indexed_signature::{QIndexedSignature, QIndexedSignatureScheme};
-use crate::signature::winternitz::domination_free_function::D;
+use crate::signature::winternitz::d::D;
 use crate::signature::{HashType, SignatureScheme};
 use crate::utils::{hash, hmac, string_to_hash};
+use anyhow::Result;
 use data_encoding::HEXLOWER;
 use rand::Rng;
 use rand_chacha::rand_core::SeedableRng;
@@ -33,7 +34,7 @@ pub struct StatelessMerklePrivateKey {
 /// ```
 /// use hash_based_signatures::signature::stateless_merkle::StatelessMerkleSignatureScheme;
 /// use hash_based_signatures::signature::SignatureScheme;
-/// use hash_based_signatures::signature::winternitz::domination_free_function::D;
+/// use hash_based_signatures::signature::winternitz::d::D;
 ///
 /// let mut signature_scheme = StatelessMerkleSignatureScheme::new([0; 32], 16, 5, D::new(255));
 /// let signature0 = signature_scheme.sign([0u8; 32]);
@@ -115,13 +116,13 @@ impl StatelessMerkleSignatureScheme {
         }
     }
 
-    pub fn from_private_key(key: &StatelessMerklePrivateKey) -> Self {
-        Self::new(
+    pub fn from_private_key(key: &StatelessMerklePrivateKey) -> Result<Self> {
+        Ok(Self::new(
             string_to_hash(&key.seed_hex),
             key.width,
             key.depth,
-            D::new(key.d),
-        )
+            D::try_from(key.d)?,
+        ))
     }
 
     pub fn private_key(&self) -> StatelessMerklePrivateKey {
@@ -211,7 +212,7 @@ impl SignatureScheme<HashType, HashType, StatelessMerkleSignature>
 #[cfg(test)]
 mod tests {
     use crate::signature::stateless_merkle::StatelessMerkleSignatureScheme;
-    use crate::signature::winternitz::domination_free_function::D;
+    use crate::signature::winternitz::d::D;
     use crate::signature::SignatureScheme;
 
     fn get_signature_scheme() -> StatelessMerkleSignatureScheme {
