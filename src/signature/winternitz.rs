@@ -114,19 +114,23 @@ impl SignatureScheme<WinternitzKey, HashType, WinternitzSignature> for Winternit
 
     fn verify(pk: WinternitzKey, message: HashType, signature: &WinternitzSignature) -> bool {
         let (d, signature) = signature;
-        let times_to_hash = domination_free_function(message, &D::new(*d));
+        if let Ok(d) = D::try_from(*d) {
+            let times_to_hash = domination_free_function(message, &d);
 
-        if times_to_hash.len() != signature.len() {
-            return false;
+            if times_to_hash.len() != signature.len() {
+                return false;
+            }
+
+            let expected_pk = hash_chain_parallel(
+                &signature,
+                times_to_hash.into_iter(),
+                iter::repeat(d.d as u8),
+            );
+
+            expected_pk == pk
+        } else {
+            false
         }
-
-        let expected_pk = hash_chain_parallel(
-            &signature,
-            times_to_hash.into_iter(),
-            iter::repeat(*d as u8),
-        );
-
-        expected_pk == pk
     }
 }
 

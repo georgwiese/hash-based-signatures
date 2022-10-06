@@ -1,5 +1,6 @@
 use crate::signature::HashType;
 use crate::utils::{bits_to_unsigned_int, get_least_significant_bits};
+use anyhow::{anyhow, Error, Result};
 
 /// Wrapper around the parameter "d" used for `domination_free_function`
 #[derive(Clone, Copy)]
@@ -9,19 +10,13 @@ pub struct D {
 }
 
 impl D {
-    /// Constructs D
+    /// Wraps a value for `d`.
     ///
     /// # Panics
-    /// Panics if d is not of the form `2^(2^x) - 1`.
-    pub fn new(d: u64) -> D {
-        let log_log_d_plus_1 = ((d + 1) as f64).log2().log2() as usize;
-        if d + 1 != (1 << (1 << log_log_d_plus_1)) {
-            panic!("d is not of the form 2^(2^x) - 1!");
-        }
-        D {
-            d,
-            log_log_d_plus_1,
-        }
+    /// Panics if `d` is not of the form 2^(2^x) - 1.
+    /// Consider using `D::try_from()`.
+    pub fn new(d: u64) -> Self {
+        D::try_from(d).unwrap()
     }
 
     /// The number of bits that are combined into one integer value
@@ -48,6 +43,24 @@ impl D {
     /// Size of the resulting Winternitz signature / key
     pub fn signature_and_key_size(&self) -> usize {
         (256 + self.bits_c()) / self.bits_to_combine()
+    }
+}
+
+impl TryFrom<u64> for D {
+    type Error = Error;
+
+    fn try_from(d: u64) -> Result<D> {
+        let log_log_d_plus_1 = ((d + 1) as f64).log2().log2() as usize;
+        if d + 1 != (1 << (1 << log_log_d_plus_1)) {
+            Err(anyhow!(
+                "d is not of the form 2^(2^x) - 1! Try one of 1, 3, 15, or 255."
+            ))
+        } else {
+            Ok(D {
+                d,
+                log_log_d_plus_1,
+            })
+        }
     }
 }
 

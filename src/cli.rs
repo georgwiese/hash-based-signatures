@@ -31,8 +31,9 @@ pub fn keygen(width: usize, depth: usize, d: u64) -> Result<()> {
     let mut rng = rand::thread_rng();
     rng.fill_bytes(&mut seed);
 
+    let d = D::try_from(d)?;
     let (time, signature_scheme) =
-        timed(move || StatelessMerkleSignatureScheme::new(seed, width, depth, D::new(d)));
+        timed(move || StatelessMerkleSignatureScheme::new(seed, width, depth, d));
     println!("  (Key generation took: {:?})\n", time);
 
     let private_key = signature_scheme.private_key();
@@ -68,7 +69,8 @@ pub fn sign(path: PathBuf) -> Result<()> {
         serde_json::from_str(&private_key_json).context("Error parsing private key")?;
 
     let file_hash = hash_file(&path)?;
-    let mut signature_scheme = StatelessMerkleSignatureScheme::from_private_key(&private_key);
+    let mut signature_scheme = StatelessMerkleSignatureScheme::from_private_key(&private_key)
+        .context("Error instantiating signature scheme from private key in .private_key.json.")?;
 
     if string_to_hash(&private_key.public_key) != signature_scheme.public_key() {
         bail!(

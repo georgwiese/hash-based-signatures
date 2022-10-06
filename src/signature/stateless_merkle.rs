@@ -2,6 +2,7 @@ use crate::signature::q_indexed_signature::{QIndexedSignature, QIndexedSignature
 use crate::signature::winternitz::domination_free_function::D;
 use crate::signature::{HashType, SignatureScheme};
 use crate::utils::{hash, hmac, string_to_hash};
+use anyhow::Result;
 use data_encoding::HEXLOWER;
 use rand::Rng;
 use rand_chacha::rand_core::SeedableRng;
@@ -115,13 +116,13 @@ impl StatelessMerkleSignatureScheme {
         }
     }
 
-    pub fn from_private_key(key: &StatelessMerklePrivateKey) -> Self {
-        Self::new(
+    pub fn from_private_key(key: &StatelessMerklePrivateKey) -> Result<Self> {
+        Ok(Self::new(
             string_to_hash(&key.seed_hex),
             key.width,
             key.depth,
-            D::new(key.d),
-        )
+            D::try_from(key.d)?,
+        ))
     }
 
     pub fn private_key(&self) -> StatelessMerklePrivateKey {
