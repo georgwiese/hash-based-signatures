@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, Bencher, Criterion};
 
 use hash_based_signatures::signature::stateless_merkle::StatelessMerkleSignatureScheme;
-use hash_based_signatures::signature::winternitz::domination_free_function::D;
+use hash_based_signatures::signature::winternitz::d::D;
 use hash_based_signatures::signature::{HashType, SignatureScheme};
 use rand::prelude::*;
 

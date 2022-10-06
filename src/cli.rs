@@ -1,6 +1,6 @@
 use crate::io::hash_file;
 use crate::signature::stateless_merkle::StatelessMerkleSignatureScheme;
-use crate::signature::winternitz::domination_free_function::D;
+use crate::signature::winternitz::d::D;
 use crate::signature::{HashType, SignatureScheme};
 use crate::utils::{slice_to_hash, string_to_hash};
 use anyhow::{bail, Context, Result};

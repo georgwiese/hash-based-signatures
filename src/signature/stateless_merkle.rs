@@ -1,5 +1,5 @@
 use crate::signature::q_indexed_signature::{QIndexedSignature, QIndexedSignatureScheme};
-use crate::signature::winternitz::domination_free_function::D;
+use crate::signature::winternitz::d::D;
 use crate::signature::{HashType, SignatureScheme};
 use crate::utils::{hash, hmac, string_to_hash};
 use anyhow::Result;
@@ -34,7 +34,7 @@ pub struct StatelessMerklePrivateKey {
 /// ```
 /// use hash_based_signatures::signature::stateless_merkle::StatelessMerkleSignatureScheme;
 /// use hash_based_signatures::signature::SignatureScheme;
-/// use hash_based_signatures::signature::winternitz::domination_free_function::D;
+/// use hash_based_signatures::signature::winternitz::d::D;
 ///
 /// let mut signature_scheme = StatelessMerkleSignatureScheme::new([0; 32], 16, 5, D::new(255));
 /// let signature0 = signature_scheme.sign([0u8; 32]);
@@ -212,7 +212,7 @@ impl SignatureScheme<HashType, HashType, StatelessMerkleSignature>
 #[cfg(test)]
 mod tests {
     use crate::signature::stateless_merkle::StatelessMerkleSignatureScheme;
-    use crate::signature::winternitz::domination_free_function::D;
+    use crate::signature::winternitz::d::D;
     use crate::signature::SignatureScheme;
 
     fn get_signature_scheme() -> StatelessMerkleSignatureScheme {
