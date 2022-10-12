@@ -18,9 +18,11 @@ jobs:
     - uses: actions/checkout@v3
     - name: Check Formatting
       run: cargo fmt --check
-    - name: Build
-      run: cargo build --verbose
+    - name: Install WASM target
+      run: rustup target add wasm32-unknown-unknown
     - name: Check WASM support
       run: cargo check --target wasm32-unknown-unknown
+    - name: Build
+      run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
