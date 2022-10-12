@@ -17,6 +17,7 @@ serde_json = "1.0.85"
 # Cryptography
 ring = "0.16.20"
 rand = "0.8.5"
+getrandom = { version = "0.2", features = ["js"] }  # For WASM support of rand
 rand_chacha = "0.3.1"
 
 # Other
