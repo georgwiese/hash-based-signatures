@@ -40,12 +40,19 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone)]
 pub struct QIndexedSignatureScheme {
     one_time_signatures: Vec<WinternitzSignatureScheme>,
-    public_key_merkle_tree: MerkleTree,
+    public_key_merkle_tree: MerkleTree<WinternitzKey>,
 }
 
 #[derive(PartialEq, Serialize, Deserialize)]
 pub struct QIndexedSignature {
-    pub proof: MerkleProof,
+    /// Merkle proof used to verify that the used Winternitz public key
+    /// is actually valid.
+    /// Note that the used Winternitz public key itself is not included
+    /// in the signature, but can be computed from the signature and the
+    /// message. This saves a lot of bytes!
+    pub proof: MerkleProof<WinternitzKey>,
+
+    /// Winternitz signature of the data being signed
     pub one_time_signature: WinternitzSignature,
 }
 
@@ -64,12 +71,10 @@ impl QIndexedSignatureScheme {
             one_time_signatures.push(WinternitzSignatureScheme::new(seed_for_sub_scheme, d));
         }
 
-        let public_keys_flat = one_time_signatures
-            .iter()
-            .map(|s| Vec::from(s.public_key().concat()))
-            .collect();
+        let public_keys: Vec<WinternitzKey> =
+            one_time_signatures.iter().map(|s| s.public_key()).collect();
 
-        let public_key_merkle_tree = MerkleTree::new(public_keys_flat);
+        let public_key_merkle_tree = MerkleTree::new(&public_keys);
 
         Self {
             one_time_signatures,
@@ -107,22 +112,18 @@ impl SignatureScheme<HashType, (usize, HashType), QIndexedSignature> for QIndexe
             return false;
         }
 
-        if !signature.proof.verify(pk) {
-            return false;
+        // Since the Winternitz public key can actually be computed from the message
+        // and the signature, we don't explicitly store it, but instead compute it
+        // and verify the Merkle proof.
+        // Note that this means that we never call `WinternitzSignatureScheme::verify()`,
+        // which would be redundant.
+        match WinternitzSignatureScheme::public_key_from_message_and_signature(
+            message,
+            &signature.one_time_signature,
+        ) {
+            Err(_) => false,
+            Ok(winternitz_pk) => signature.proof.verify(pk, &winternitz_pk),
         }
-
-        // Parse Winternitz key by "reshaping" it from Vec<u8> to Vec<[u8; 32]>
-        // TODO: I'm sure there is a better way...
-        let mut winternitz_key: WinternitzKey = Vec::new();
-        for i in 0..(signature.proof.data.len() / 32) {
-            let mut data = [0u8; 32];
-            for j in 0..32 {
-                data[j] = signature.proof.data[i * 32 + j];
-            }
-            winternitz_key.push(data);
-        }
-
-        WinternitzSignatureScheme::verify(winternitz_key, message, &signature.one_time_signature)
     }
 }
 
