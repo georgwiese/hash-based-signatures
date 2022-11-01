@@ -46,6 +46,8 @@ pub struct QIndexedSignatureScheme {
 #[derive(PartialEq, Serialize, Deserialize)]
 pub struct QIndexedSignature {
     pub proof: MerkleProof,
+
+    /// Winternitz signature of the data being signed
     pub one_time_signature: WinternitzSignature,
 }
 

@@ -36,15 +36,17 @@ pub struct MerkleProof {
     pub hash_chain: Vec<[u8; 32]>,
 }
 
+/// Hash function applied to leaves of the Merkle tree
 pub fn leaf_hash(data: &[u8]) -> [u8; 32] {
     // For leafs, we need to use a different hash function for security:
     // https://crypto.stackexchange.com/questions/2106/what-is-the-purpose-of-using-different-hash-functions-for-the-leaves-and-interna
-    // So, we append a zero to all leafes before hashing them
+    // So, we append a zero to all leaves before hashing them
     let zero = [0u8];
     let all_elements = [data, &zero as &[u8]].concat();
     hash(&all_elements)
 }
 
+/// Hash function applied to internal nodes of the Merkle tree
 pub fn internal_node_hash(left: &[u8; 32], right: &[u8; 32]) -> [u8; 32] {
     let all_elements = [*left, *right].concat();
     hash(&all_elements)

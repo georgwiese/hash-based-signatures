@@ -10,7 +10,13 @@ use rand_chacha::ChaCha20Rng;
 use rayon::prelude::*;
 use std::iter;
 
+/// Private or Public key.
+/// The length depends on Winternitz parameter `d` and is roughly
+/// `256 / log2(d)`.
 pub type WinternitzKey = Vec<[u8; 32]>;
+
+/// Winternitz signature.
+/// The first element is Winternitz parameter `d`, the second is the actual signature.
 pub type WinternitzSignature = (u64, Vec<[u8; 32]>);
 
 /// Winternitz signatures, as described in Section 14.3
