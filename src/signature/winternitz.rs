@@ -5,6 +5,7 @@ use crate::signature::winternitz::d::D;
 use crate::signature::winternitz::domination_free_function::domination_free_function;
 use crate::signature::{HashType, SignatureScheme};
 use crate::utils::{bits_to_unsigned_ints, get_least_significant_bits, hash};
+use anyhow::{bail, Result};
 use rand::prelude::*;
 use rand_chacha::ChaCha20Rng;
 use rayon::prelude::*;
@@ -104,6 +105,30 @@ impl WinternitzSignatureScheme {
 
         Self { sk, pk, d }
     }
+
+    /// Given a message and signature, computes the public key belonging to the private
+    /// key that signed the message.
+    pub fn public_key_from_message_and_signature(
+        message: HashType,
+        signature: &WinternitzSignature,
+    ) -> Result<WinternitzKey> {
+        let (d, signature) = signature;
+        let d = D::try_from(*d)?;
+
+        let times_to_hash = domination_free_function(message, &d);
+
+        if times_to_hash.len() != signature.len() {
+            bail!("Signature has invalid length");
+        }
+
+        let expected_pk = hash_chain_parallel(
+            &signature,
+            times_to_hash.into_iter(),
+            iter::repeat(d.d as u8),
+        );
+
+        Ok(expected_pk)
+    }
 }
 
 impl SignatureScheme<WinternitzKey, HashType, WinternitzSignature> for WinternitzSignatureScheme {
@@ -121,23 +146,9 @@ impl SignatureScheme<WinternitzKey, HashType, WinternitzSignature> for Winternit
     }
 
     fn verify(pk: WinternitzKey, message: HashType, signature: &WinternitzSignature) -> bool {
-        let (d, signature) = signature;
-        if let Ok(d) = D::try_from(*d) {
-            let times_to_hash = domination_free_function(message, &d);
-
-            if times_to_hash.len() != signature.len() {
-                return false;
-            }
-
-            let expected_pk = hash_chain_parallel(
-                &signature,
-                times_to_hash.into_iter(),
-                iter::repeat(d.d as u8),
-            );
-
-            expected_pk == pk
-        } else {
-            false
+        match WinternitzSignatureScheme::public_key_from_message_and_signature(message, signature) {
+            Ok(expected_public_key) => expected_public_key == pk,
+            Err(_) => false,
         }
     }
 }
