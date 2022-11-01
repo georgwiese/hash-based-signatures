@@ -11,8 +11,8 @@ use std::marker::PhantomData;
 /// ```
 /// use hash_based_signatures::merkle_tree::MerkleTree;
 ///
-/// let elements = (0..128).collect();
-/// let tree = MerkleTree::new(elements);
+/// let elements: Vec<u8> = (0..128).collect();
+/// let tree = MerkleTree::new(&elements);
 /// let proof = tree.get_proof(17);
 /// assert!(proof.verify(*tree.get_root_hash(), &17));
 /// ```
