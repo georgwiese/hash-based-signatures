@@ -45,6 +45,11 @@ pub struct QIndexedSignatureScheme {
 
 #[derive(PartialEq, Serialize, Deserialize)]
 pub struct QIndexedSignature {
+    /// Merkle proof used to verify that the used Winternitz public key
+    /// is actually valid.
+    /// Note that the used Winternitz public key itself is not included
+    /// in the signature, but can be computed from the signature and the
+    /// message. This saves a lot of bytes!
     pub proof: MerkleProof<WinternitzKey>,
 
     /// Winternitz signature of the data being signed
