@@ -1,3 +1,5 @@
+wasm-pack build --target web && wasm-pack build --target bundler
+
 cd site
 npm install
 npx webpack
