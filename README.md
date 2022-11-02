@@ -2,6 +2,8 @@
 
 A Rust implementation of hash-based signatures.
 
+<img src="assets/demo.gif" />
+
 ***Disclaimer:** This repository is a toy project to play around with Rust and cryptographic primitives.
 It implements some ideas of Chapter 14 of ["A Graduate Course in
 Applied Cryptography"](http://toc.cryptobook.us/) by Dan Boneh and Victor Shoup.*
