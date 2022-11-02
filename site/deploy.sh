@@ -7,5 +7,8 @@ cp index.html dist/
 
 cd ..
 
+cargo doc
+cp -r target/doc site/dist/docs
+
 git commit -am "Update webapp"
 git subtree push --prefix site/dist origin webapp
