@@ -1,4 +1,5 @@
 cd site
+npm install
 npx webpack
 cp index.html dist/
 
