@@ -7,7 +7,8 @@ cp index.html dist/
 
 cd ..
 
-cargo doc
+rm -r target/doc
+cargo doc --no-deps
 cp -r target/doc site/dist/docs
 
 git commit -am "Update webapp"
