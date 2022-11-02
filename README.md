@@ -44,4 +44,5 @@ $ cargo run -- sign example/readme.md
 ## Web app
 
 Last but not least, signatures can also be verified using a web app, based on a Web Assembly compilation of the code:
+
 https://georgwiese.github.io/hash-based-signatures/
