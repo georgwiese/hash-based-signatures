@@ -1,4 +1,5 @@
 use crate::signature::HashType;
+use anyhow::{bail, Result};
 use data_encoding::HEXLOWER;
 use ring::digest::{digest, SHA256};
 use ring::hmac::Key;
@@ -26,12 +27,16 @@ pub fn hmac(key: &HashType, data: &[u8]) -> HashType {
     slice_to_hash(ring::hmac::sign(&hmac_key, data).as_ref())
 }
 
+pub fn string_to_hash_maybe(hash_string: &str) -> Result<HashType> {
+    let decoded = HEXLOWER.decode(hash_string.as_bytes())?;
+    if decoded.len() != 32 {
+        bail!("Invalid number of bytes!");
+    }
+    Ok(slice_to_hash(&decoded))
+}
+
 pub fn string_to_hash(hash_string: &str) -> HashType {
-    slice_to_hash(
-        &HEXLOWER
-            .decode(hash_string.as_bytes())
-            .expect("Could not decode"),
-    )
+    string_to_hash_maybe(hash_string).expect("Could not decode")
 }
 
 /// Gets the `bits` least significant bits of `index`,
