@@ -1,10 +1,29 @@
 <!DOCTYPE html>
 <html lang="en-US">
-  <head>
+
+<head>
     <meta charset="utf-8" />
     <title>hello-wasm example</title>
-  </head>
-  <body>
+</head>
+
+<body>
     <script src="./index.js"></script>
-  </body>
+    <h1>Test</h1>
+    <form name="form" onsubmit="return window.onSubmit()">
+        <label>
+            Public key:
+            <input name="public_key" type="text" required />
+        </label><br />
+        <label>
+            File:
+            <input name="file" type="file" required />
+        </label><br />
+        <label>
+            Signature:
+            <input name="signature" type="file" required />
+        </label><br />
+        <input type="submit" value="Check" />
+    </form>
+</body>
+
 </html>
