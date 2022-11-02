@@ -44,3 +44,7 @@ To sign a file, make sure that you have a `.private_key.json` in your working di
 ```bash
 $ cargo run -- sign example/readme.md
 ```
+
+# Docs
+
+Find the docs [here](https://georgwiese.github.io/hash-based-signatures/docs/hash_based_signatures/index.html).
