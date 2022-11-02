@@ -1,6 +1,6 @@
 # Webapp
 
-To deploy, run the deploy script from the project root:
+To deploy, run the deployment script from the project root:
 
 ```
 $ ./site/deploy.sh
