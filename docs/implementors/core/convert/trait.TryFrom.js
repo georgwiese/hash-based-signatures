@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["hash_based_signatures"] = [{"text":"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.64.0/core/convert/trait.TryFrom.html\" title=\"trait core::convert::TryFrom\">TryFrom</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.64.0/std/primitive.u64.html\">u64</a>&gt; for <a class=\"struct\" href=\"hash_based_signatures/signature/winternitz/d/struct.D.html\" title=\"struct hash_based_signatures::signature::winternitz::d::D\">D</a>","synthetic":false,"types":["hash_based_signatures::signature::winternitz::d::D"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
