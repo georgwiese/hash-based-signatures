@@ -71,6 +71,7 @@ fn hash_chain(input: HashType, start: u8, end: u8) -> HashType {
     current_hash_value
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn hash_chain_parallel(
     inputs: &Vec<HashType>,
     starts: impl Iterator<Item = u8>,
@@ -80,7 +81,24 @@ fn hash_chain_parallel(
     let starts: Vec<u8> = starts.take(inputs.len()).collect();
     let ends: Vec<u8> = ends.take(inputs.len()).collect();
 
-    // TODO: Change back to par_iter
+    inputs
+        .par_iter()
+        .zip(starts.par_iter())
+        .zip(ends.par_iter())
+        .map(|((input, start), end)| hash_chain(*input, *start, *end))
+        .collect()
+}
+
+#[cfg(target_arch = "wasm32")]
+fn hash_chain_parallel(
+    inputs: &Vec<HashType>,
+    starts: impl Iterator<Item = u8>,
+    ends: impl Iterator<Item = u8>,
+) -> Vec<HashType> {
+    // Same as above, but using `iter()` instead of `par_iter()` to avoid spawning threads.
+    let starts: Vec<u8> = starts.take(inputs.len()).collect();
+    let ends: Vec<u8> = ends.take(inputs.len()).collect();
+
     inputs
         .iter()
         .zip(starts.iter())
