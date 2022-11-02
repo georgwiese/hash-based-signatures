@@ -2,6 +2,9 @@
 name = "hash-based-signatures"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+readme = "readme.md"
+repository = "https://github.com/georgwiese/hash-based-signatures"
 description = "A command-line tool to sign arbitrary files using hash-based signatures."
 authors = ["Georg Wiese <georgwiese@gmail.com>"]
 
