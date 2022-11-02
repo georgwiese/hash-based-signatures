@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hash-based signatures: Verify Signature!</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+</head>
+
+<body>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3"
+        crossorigin="anonymous"></script>
+    <script src="https://kit.fontawesome.com/a0c7a9ff60.js" crossorigin="anonymous"></script>
+    <script src="./index.js"></script>
+    <div class="container-sm">
+        <h1>Verify a hash-based signature</h1>
+        <form name="form" onsubmit="return window.onSubmit()">
+            <div class="mb-3">
+                <label for="public_key" class="form-label">
+                    Public key:
+                </label>
+                <input name="public_key" id="public_key" type="text" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label for="file" class="form-label">
+                    File:
+                </label>
+                <input name="file" id="file" type="file" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label for="signature" class="form-label">
+                    Signature:
+                </label>
+                <input name="signature" id="signature" type="file" class="form-control" accept=".signature" required />
+            </div>
+            <input class="btn btn-primary" type="submit" value="Check" />
+        </form>
+    </div>
+
+    <!-- For debugging
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#valid-modal">
+        Launch valid modal
+    </button>
+
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#invalid-modal">
+        Launch invalid modal
+    </button>
+    -->
+
+
+    <div class="modal fade" id="valid-modal" data-bs-backdrop="static" tabindex="-1"
+        aria-labelledby="validModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header" style="background-color: hsl(121, 100%, 86%);">
+                    <h1 class="modal-title fs-5" id="validModalLabel">Signature is valid!</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row align-items-center">
+                        <div class="col-1">
+                            <i class="fa-solid fa-circle-check fa-2xl"></i>
+                        </div>
+                        <div class="col-11">
+                            Congrats! The provided signature is valid.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="invalid-modal" data-bs-backdrop="static" tabindex="-1"
+        aria-labelledby="invalidModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header" style="background-color: hsl(0, 100%, 86%);">
+                    <h1 class="modal-title fs-5" id="invalidModalLabel">Signature is invalid!</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row align-items-center">
+                        <div class="col-1">
+                            <i class="fa-solid fa-circle-xmark fa-2xl"></i>
+                        </div>
+                        <div class="col-11">
+                            <span id="invalid-reason">The signature is invalid.</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

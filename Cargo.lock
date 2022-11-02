@@ -231,8 +231,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4eb1a864a501629691edf6c15a593b7a51eebaa1e8468e9ddc623de7c9b58ec6"
 dependencies = [
  "cfg-if",
+ "js-sys",
  "libc",
  "wasi",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -249,6 +251,8 @@ dependencies = [
  "clap",
  "criterion",
  "data-encoding",
+ "getrandom",
+ "js-sys",
  "rand",
  "rand_chacha",
  "rayon",
@@ -257,6 +261,7 @@ dependencies = [
  "serde",
  "serde-big-array",
  "serde_json",
+ "wasm-bindgen",
 ]
 
 [[package]]
