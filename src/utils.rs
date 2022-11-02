@@ -26,7 +26,7 @@ pub fn hmac(key: &HashType, data: &[u8]) -> HashType {
     slice_to_hash(ring::hmac::sign(&hmac_key, data).as_ref())
 }
 
-pub fn string_to_hash(hash_string: &String) -> HashType {
+pub fn string_to_hash(hash_string: &str) -> HashType {
     slice_to_hash(
         &HEXLOWER
             .decode(hash_string.as_bytes())

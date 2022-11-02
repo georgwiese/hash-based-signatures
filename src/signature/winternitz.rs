@@ -80,10 +80,11 @@ fn hash_chain_parallel(
     let starts: Vec<u8> = starts.take(inputs.len()).collect();
     let ends: Vec<u8> = ends.take(inputs.len()).collect();
 
+    // TODO: Change back to par_iter
     inputs
-        .par_iter()
-        .zip(starts.par_iter())
-        .zip(ends.par_iter())
+        .iter()
+        .zip(starts.iter())
+        .zip(ends.iter())
         .map(|((input, start), end)| hash_chain(*input, *start, *end))
         .collect()
 }
