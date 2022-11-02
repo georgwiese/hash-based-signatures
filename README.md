@@ -2,8 +2,6 @@
 
 A Rust implementation of hash-based signatures.
 
-<img src="assets/demo.gif" />
-
 ***Disclaimer:** This repository is a toy project to play around with Rust and cryptographic primitives.
 It implements some ideas of Chapter 14 of ["A Graduate Course in
 Applied Cryptography"](http://toc.cryptobook.us/) by Dan Boneh and Victor Shoup.*
@@ -17,20 +15,15 @@ Stateless many-time signature schemes can be built in a three-step process:
    (at the expense of a larger signature).
 3. Finally, Merkle signatures build a tree of indexed signature schemes.
 
-## Current status
+## Command line tool
 
-This is the current list of finished & planned steps:
-- One-time signatures:
-  - [x] Implement basic Lamport signature scheme
-  - [x] Implement Winternitz one-time signatures to reduce signature sizes
-- q-indexed signatures:
-  - [x] Basic q-indexed signature scheme from one-time signature scheme
-  - [x] Public key compression via Merkle tree
-- [x] Merkle signatures
-- [x] (De)Serialization of signatures and keys
-- [x] Command-line interface to sign arbitrary files & verify signatures
+[Install Rust](https://www.rust-lang.org/tools/install) and run:
+```
+$ cargo install hash-based-signatures
+```
 
-## Command line interface
+This gives you a command-line tool that lets you generate keys, sign files, and validate signatures:
+<img src="assets/demo.gif" />
 
 To get started with signature verification, check out [the example](./example)!
 
@@ -46,3 +39,8 @@ To sign a file, make sure that you have a `.private_key.json` in your working di
 ```bash
 $ cargo run -- sign example/readme.md
 ```
+
+## Web app
+
+Last but not least, signatures can also be verified using a web app, based on a Web Assembly compilation of the code:
+https://georgwiese.github.io/hash-based-signatures/
