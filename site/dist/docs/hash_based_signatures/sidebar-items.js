@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":[["cli",""],["io",""],["merkle_tree",""],["signature",""],["utils",""],["wasm",""]]};
