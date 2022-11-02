@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":[["QIndexedSignature",""],["QIndexedSignatureScheme","The q-indexed signature scheme, as described in Section 14.6.1 in the textbook by Boneh & Shoup."]]};

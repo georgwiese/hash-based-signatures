@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["domination_free_function","A “domination-free function”, as described in section 14.3.1 of the textbook by Boneh & Shoup (version 0.5)."]]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":[["BasicLamportSignature",""],["BasicLamportSignatureScheme","The basic Lamport one-time signature, as described in Section 14.1 in the textbook by Boneh & Shoup."]],"type":[["BasicLamportKey",""]]};

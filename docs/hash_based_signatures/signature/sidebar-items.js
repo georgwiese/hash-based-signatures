@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":[["basic_lamport",""],["q_indexed_signature",""],["stateless_merkle",""],["winternitz",""]],"trait":[["SignatureScheme","A generic trait that describes a signature scheme."]],"type":[["HashType",""]]};
