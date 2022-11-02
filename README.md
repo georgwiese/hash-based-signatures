@@ -23,6 +23,7 @@ $ cargo install hash-based-signatures
 ```
 
 This gives you a command-line tool that lets you generate keys, sign files, and validate signatures:
+
 <img src="assets/demo.gif" />
 
 To get started with signature verification, check out [the example](./example)!
