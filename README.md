@@ -1,6 +1,6 @@
 # Hash-based signatures
 
-A Rust implementation of hash-based signatures.
+A Rust implementation of hash-based signatures. See my [Medium post](https://medium.com/@georgwiese/hash-based-digital-signatures-almost-from-scratch-da57e54dd774) for a longer description!
 
 ***Disclaimer:** This repository is a toy project to play around with Rust and cryptographic primitives.
 It implements some ideas of Chapter 14 of ["A Graduate Course in
